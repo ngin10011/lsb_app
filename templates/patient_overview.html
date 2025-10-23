@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}Patients Overview{% endblock %}
+
+{% block body %}
+<h1 class="h4 mb-3">Patientenübersicht</h1>
+
+<table class="table table-striped table-sm align-middle">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Name</th>
+      <th>Vorname</th>
+      <th>Geburtsdatum</th>
+      <th>Gewicht</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in patients %}
+      <tr>
+        <td>{{ p.id }}</td>
+        <td>{{ p.name }}</td>
+        <td>{{ p.vorname }}</td>
+        <td>{{ p.geburtsdatum.strftime('%d.%m.%Y') }}</td>
+        <td>{{ '%.1f'|format(p.gewicht) }} kg</td>
+        <td><a class="btn btn-sm btn-primary" href="#">Details</a></td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6">Keine Patienten vorhanden.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

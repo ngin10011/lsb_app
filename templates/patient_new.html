@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}New Patient{% endblock %}
+
+{% block body %}
+<h1 class="h4">Patient anlegen</h1>
+
+<form method="post" novalidate>
+  {{ form.hidden_tag() }}
+
+  <div class="mb-2">
+    {{ form.name.label(class="form-label") }}
+    {{ form.name(class="form-control") }}
+    {% for e in form.name.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+  </div>
+
+  <div class="mb-2">
+    {{ form.vorname.label(class="form-label") }}
+    {{ form.vorname(class="form-control") }}
+    {% for e in form.vorname.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+  </div>
+
+  <div class="mb-2">
+    {{ form.geburtsdatum.label(class="form-label") }}
+    {{ form.geburtsdatum(class="form-control", type="date") }}
+    {% for e in form.geburtsdatum.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+  </div>
+
+  <div class="mb-2">
+    {{ form.gewicht.label(class="form-label") }}
+    {{ form.gewicht(class="form-control", step="0.1") }}
+    {% for e in form.gewicht.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+  </div>
+
+  <div class="mb-3">
+    {{ form.bemerkung.label(class="form-label") }}
+    {{ form.bemerkung(class="form-control", rows="4") }}
+  </div>
+
+  {{ form.submit(class="btn btn-primary") }}
+</form>
+{% endblock %}

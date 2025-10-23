@@ -1,0 +1,29 @@
+# --- Python allgemein ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# --- Virtuelle Umgebungen ---
+venv/
+.venv/
+.env
+!.env.example
+
+# --- Flask spezifisch ---
+/instance/*
+!/instance/.gitkeep
+*.db
+*.sqlite
+*.sqlite3
+
+# --- Logs / temporäre Dateien ---
+*.log
+*.tmp
+
+# --- Editor / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
