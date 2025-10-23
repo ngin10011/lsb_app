@@ -46,7 +46,7 @@
     <div class="mb-2">
         {{ form.geschlecht.label(class="form-label") }}
         {{ form.geschlecht(class="form-select") }}
-        {% for e in form.geburtsdatum.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+        {% for e in form.geschlecht.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
     </div>
 
   <div>

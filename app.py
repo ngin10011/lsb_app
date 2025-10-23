@@ -7,6 +7,7 @@ from flask_wtf import CSRFProtect
 from forms import PatientForm
 from enum import Enum
 from sqlalchemy import Enum as SqlEnum
+from models import db, Patient
 
 load_dotenv()
 
@@ -21,26 +22,8 @@ db_path = os.path.join(app.instance_path, "site.db")
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-db = SQLAlchemy(app)
+db.init_app(app)
 csrf = CSRFProtect(app)
-
-##### Models #####
-
-class GeschlechtEnum(Enum):
-    MAENNLICH = "männlich"
-    WEIBLICH = "weiblich"
-    DIVERS = "divers"
-    UNBEKANNT = "unbekannt"
-
-class Patient(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(120), nullable=False)
-    geburtsname = db.Column(db.String(120), nullable=True)
-    vorname = db.Column(db.String(120), nullable=False)
-    geburtsdatum = db.Column(db.Date, nullable=False)
-    geschlecht = db.Column(SqlEnum(GeschlechtEnum), nullable=False)
-
-##### Routes #####
 
 @app.route("/")
 def home():
