@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}New TB{% endblock %}
+
+{% block body %}
+<h1 class="h4">TB anlegen</h1>
+
+<form method="post" novalidate>
+  {{ form.hidden_tag() }}
+
+  <div>
+    <p class="text-warning">Auftragsnummer</p>
+  </div>
+
+  <hr>
+  <div>
+
+    <h6>Patient</h6>
+
+    <div class="mb-2">
+        {{ form.name.label(class="form-label") }}
+        {{ form.name(class="form-control") }}
+        {% for e in form.name.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="mb-2">
+        {{ form.geburtsname.label(class="form-label") }}
+        {{ form.geburtsname(class="form-control") }}
+        {% for e in form.geburtsname.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="mb-2">
+        {{ form.vorname.label(class="form-label") }}
+        {{ form.vorname(class="form-control") }}
+        {% for e in form.vorname.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+    </div>
+
+
+    <div class="mb-2">
+        {{ form.geburtsdatum.label(class="form-label") }}
+        {{ form.geburtsdatum(class="form-control", type="date") }}
+        {% for e in form.geburtsdatum.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="mb-2">
+        {{ form.geschlecht.label(class="form-label") }}
+        {{ form.geschlecht(class="form-select") }}
+        {% for e in form.geburtsdatum.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+    </div>
+
+  <div>
+    <p class="text-warning">Meldeadresse (mit Dropdown) </p>
+  </div>
+
+  </div>
+
+  <hr>
+  <div>
+
+    <h6>Auftrag</h6>
+
+  <div>
+    <p class="text-warning">Auftragsadresse (Checkbox selbe Meldeadresse)
+        ansonsten Dropdown?
+    </p>
+  </div>
+
+  <div>
+    <p class="text-warning">Auftragsdatum</p>
+  </div>
+
+  <div>
+    <p class="text-warning">Auftragsuhrzeit</p>
+  </div>
+
+  <div>
+    <p class="text-warning">Kostenstelle (vielleicht ans Ende nach den
+        anderen Kategorien?)
+    </p>
+  </div>
+
+  <hr>
+  <div>
+    <h6>Angehörige</h6>
+  </div>
+
+  <hr>
+  <div>
+    <h6>Bestattungsinstitut</h6>
+  </div>
+
+  <hr>
+  <div>
+    <h6>Behörden</h6>
+  </div>
+
+  <hr>
+  <div>
+    <h6>Bemerkung (in DB tblAuftrag speichern?)</h6>
+  </div>
+
+
+  </div>
+
+  {{ form.submit(class="btn btn-primary") }}
+</form>
+{% endblock %}

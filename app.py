@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import CSRFProtect
 from forms import PatientForm
+from enum import Enum
+from sqlalchemy import Enum as SqlEnum
 
 load_dotenv()
 
@@ -23,19 +25,38 @@ csrf = CSRFProtect(app)
 
 ##### Models #####
 
+class GeschlechtEnum(Enum):
+    MAENNLICH = "männlich"
+    WEIBLICH = "weiblich"
+    DIVERS = "divers"
+    UNBEKANNT = "unbekannt"
+
 class Patient(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
+    geburtsname = db.Column(db.String(120), nullable=True)
     vorname = db.Column(db.String(120), nullable=False)
     geburtsdatum = db.Column(db.Date, nullable=False)
-    gewicht = db.Column(db.Float, nullable=False)
-    bemerkung = db.Column(db.Text, nullable=True)
+    geschlecht = db.Column(SqlEnum(GeschlechtEnum), nullable=False)
 
 ##### Routes #####
 
 @app.route("/")
 def home():
     return render_template("home.html")
+
+# Todesbescheinigung (TB) #
+
+@app.route("/tb/new", methods=["GET", "POST"])
+def tb_new():
+    form = PatientForm()
+    if form.validate_on_submit():
+        p = Patient()
+        form.populate_obj(p)
+        db.session.add(p)
+        db.session.commit()
+        return redirect(url_for("patient_overview"))
+    return render_template("tb_new.html", form=form)
 
 # Patients #
 
