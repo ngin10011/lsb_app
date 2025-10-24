@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import CSRFProtect
-from forms import PatientForm
+from forms import PatientForm, TBPatientForm
 from enum import Enum
 from sqlalchemy import Enum as SqlEnum
 from models import db, Patient, GeschlechtEnum, Adresse
@@ -37,10 +37,39 @@ def home():
 
 @app.route("/tb/new", methods=["GET", "POST"])
 def tb_new():
-    form = PatientForm()
+    form = TBPatientForm()
+
+    # Choices für vorhandene Adressen befüllen (+ „Neu…“ Option)
+    adressen = Adresse.query.order_by(Adresse.ort, Adresse.plz, Adresse.strasse, Adresse.hausnummer).all()
+    form.meldeadresse_id.choices = [(-1, "➕ Neue Adresse anlegen…")] + [(a.id, str(a)) for a in adressen]
+
     if form.validate_on_submit():
+        # Entweder existierende Adresse…
+        if form.meldeadresse_id.data != -1:
+            adr = Adresse.query.get(form.meldeadresse_id.data)
+            if not adr:
+                # Fallback: sollte eigentlich nicht passieren
+                return render_template("tb_new.html", form=form, error="Adresse nicht gefunden.")
+        else:
+            # …oder neue Adresse anlegen (validiere minimal)
+            missing = [f for f in ("new_strasse", "new_hausnummer", "new_plz", "new_ort")
+                       if not getattr(form, f).data]
+            if missing:
+                # einfache Fehlermeldung – alternativ Feldfehler setzen
+                return render_template("tb_new.html", form=form, error="Bitte alle Adressfelder ausfüllen.")
+            adr = Adresse(
+                strasse=form.new_strasse.data,
+                hausnummer=form.new_hausnummer.data,
+                plz=form.new_plz.data,
+                ort=form.new_ort.data,
+            )
+            db.session.add(adr)
+            db.session.flush()  # damit adr.id verfügbar ist
+
+
         p = Patient()
         form.populate_obj(p)
+        p.meldeadresse = adr
         db.session.add(p)
         db.session.commit()
         return redirect(url_for("patient_overview"))

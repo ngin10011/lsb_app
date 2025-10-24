@@ -13,7 +13,6 @@
     <p class="text-warning">Auftragsnummer</p>
   </div>
 
-  <hr>
   <div class="card mb-4">
     <div class="card-body">
 
@@ -50,8 +49,43 @@
           {% for e in form.geschlecht.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
       </div>
 
-      <div>
-        <p class="text-warning">Meldeadresse (mit Dropdown) </p>
+      <div class="card mb-4">
+        <div class="card-body">
+          <h2 class="h6 mb-3">Meldeadresse</h2>
+
+          <div class="mb-3">
+            {{ form.meldeadresse_id.label(class="form-label") }}
+            {{ form.meldeadresse_id(class="form-select", id="sel-meldeadresse") }}
+          </div>
+
+          <div id="new-address-fields" class="border rounded p-3" style="display:none;">
+            <div class="row g-2">
+              <div class="col-md-9">
+                {{ form.new_strasse.label(class="form-label") }}
+                {{ form.new_strasse(class="form-control") }}
+              </div>
+              <div class="col-md-3">
+                {{ form.new_hausnummer.label(class="form-label") }}
+                {{ form.new_hausnummer(class="form-control") }}
+              </div>
+            </div>
+            <div class="row g-2 mt-2">
+              <div class="col-md-4">
+                {{ form.new_plz.label(class="form-label") }}
+                {{ form.new_plz(class="form-control") }}
+              </div>
+              <div class="col-md-8">
+                {{ form.new_ort.label(class="form-label") }}
+                {{ form.new_ort(class="form-control") }}
+              </div>
+            </div>
+            <div class="form-text mt-2">Bitte alle Felder ausfüllen, wenn du eine neue Adresse anlegst.</div>
+          </div>
+
+          {% if error %}
+            <div class="text-danger mt-2">{{ error }}</div>
+          {% endif %}
+        </div>
       </div>
 
     </div>
@@ -107,4 +141,17 @@
 
   {{ form.submit(class="btn btn-primary") }}
 </form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const sel = document.getElementById('sel-meldeadresse');
+  const box = document.getElementById('new-address-fields');
+  function toggleNew() {
+    box.style.display = (parseInt(sel.value, 10) === -1) ? 'block' : 'none';
+  }
+  sel.addEventListener('change', toggleNew);
+  toggleNew(); // initial
+});
+</script>
+
 {% endblock %}

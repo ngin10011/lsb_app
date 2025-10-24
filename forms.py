@@ -1,7 +1,7 @@
 # forms.py
 from flask_wtf import FlaskForm
 from wtforms import StringField, DateField, SelectField, SubmitField
-from wtforms.validators import DataRequired, Length
+from wtforms.validators import DataRequired, Length, Optional
 from models import GeschlechtEnum  # ✅ importiere das Enum von dort
 
 def strip_or_none(v):
@@ -28,3 +28,12 @@ class PatientForm(FlaskForm):
         self.geschlecht.choices = [("", "— bitte wählen —")] + [
             (g.value, g.value) for g in GeschlechtEnum
         ]
+
+class TBPatientForm(PatientForm):
+    meldeadresse_id = SelectField("Meldeadressee", coerce=int, validators=[Optional()])
+
+    # Felder für neue Adresse (werden nur benötigt, wenn „Neu…“ gewählt)
+    new_strasse    = StringField("Straße",     validators=[Optional(), Length(max=120)], filters=[strip_or_none])
+    new_hausnummer = StringField("Nr.",        validators=[Optional(), Length(max=20)],  filters=[strip_or_none])
+    new_plz        = StringField("PLZ",        validators=[Optional(), Length(max=10)],  filters=[strip_or_none])
+    new_ort        = StringField("Ort",        validators=[Optional(), Length(max=120)], filters=[strip_or_none])
