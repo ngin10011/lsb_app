@@ -13,7 +13,8 @@
       <th>Name</th>
       <th>Vorname</th>
       <th>Geburtsdatum</th>
-      <th>Gewicht</th>
+      <th>Geschlecht</th>
+      <th>Meldeadresse</th>
       <th></th>
     </tr>
   </thead>
@@ -24,7 +25,8 @@
         <td>{{ p.name }}</td>
         <td>{{ p.vorname }}</td>
         <td>{{ p.geburtsdatum.strftime('%d.%m.%Y') }}</td>
-        <td>{{ '%.1f'|format(p.gewicht) }} kg</td>
+        <td>{{ p.geschlecht }}</td>
+        <td>{{ p.meldeadresse }}</td>
         <td><a class="btn btn-sm btn-primary" href="#">Details</a></td>
       </tr>
     {% else %}

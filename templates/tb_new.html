@@ -14,45 +14,47 @@
   </div>
 
   <hr>
-  <div>
+  <div class="card mb-4">
+    <div class="card-body">
 
-    <h6>Patient</h6>
+      <h2 class="h6 mb-3">Patient</h2>
 
-    <div class="mb-2">
-        {{ form.name.label(class="form-label") }}
-        {{ form.name(class="form-control") }}
-        {% for e in form.name.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+      <div class="mb-2">
+          {{ form.name.label(class="form-label") }}
+          {{ form.name(class="form-control") }}
+          {% for e in form.name.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div class="mb-2">
+          {{ form.geburtsname.label(class="form-label") }}
+          {{ form.geburtsname(class="form-control") }}
+          {% for e in form.geburtsname.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div class="mb-2">
+          {{ form.vorname.label(class="form-label") }}
+          {{ form.vorname(class="form-control") }}
+          {% for e in form.vorname.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+      </div>
+
+
+      <div class="mb-2">
+          {{ form.geburtsdatum.label(class="form-label") }}
+          {{ form.geburtsdatum(class="form-control", type="date") }}
+          {% for e in form.geburtsdatum.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div class="mb-2">
+          {{ form.geschlecht.label(class="form-label") }}
+          {{ form.geschlecht(class="form-select") }}
+          {% for e in form.geschlecht.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div>
+        <p class="text-warning">Meldeadresse (mit Dropdown) </p>
+      </div>
+
     </div>
-
-    <div class="mb-2">
-        {{ form.geburtsname.label(class="form-label") }}
-        {{ form.geburtsname(class="form-control") }}
-        {% for e in form.geburtsname.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
-    </div>
-
-    <div class="mb-2">
-        {{ form.vorname.label(class="form-label") }}
-        {{ form.vorname(class="form-control") }}
-        {% for e in form.vorname.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
-    </div>
-
-
-    <div class="mb-2">
-        {{ form.geburtsdatum.label(class="form-label") }}
-        {{ form.geburtsdatum(class="form-control", type="date") }}
-        {% for e in form.geburtsdatum.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
-    </div>
-
-    <div class="mb-2">
-        {{ form.geschlecht.label(class="form-label") }}
-        {{ form.geschlecht(class="form-select") }}
-        {% for e in form.geschlecht.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
-    </div>
-
-  <div>
-    <p class="text-warning">Meldeadresse (mit Dropdown) </p>
-  </div>
-
   </div>
 
   <hr>

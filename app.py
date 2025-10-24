@@ -7,7 +7,11 @@ from flask_wtf import CSRFProtect
 from forms import PatientForm
 from enum import Enum
 from sqlalchemy import Enum as SqlEnum
-from models import db, Patient
+from models import db, Patient, GeschlechtEnum, Adresse
+from faker import Faker
+from datetime import date
+import random
+import click
 
 load_dotenv()
 
@@ -59,6 +63,44 @@ def patient_new():
         db.session.commit()
         return redirect(url_for("home"))
     return render_template("patient_new.html", form=form)
+
+
+
+def seed_faker(n_addresses=15, n_patients=20):
+
+    fake = Faker("de_DE")
+
+    adrs = []
+    for _ in range(n_addresses):
+        a = Adresse(
+            strasse=fake.street_name(),
+            hausnummer=fake.building_number(),
+            plz=fake.postcode(),
+            ort=fake.city()
+            # distanz=random.randint(1, 60),  # z.B. km
+        )
+        db.session.add(a)
+        adrs.append(a)
+
+    # IDs holen ohne Commit (damit Beziehung sofort gesetzt werden kann)
+    db.session.flush()
+
+    genders = list(GeschlechtEnum)
+    for _ in range(n_patients):
+        geburtsname = fake.last_name() if random.random() < 0.25 else None
+        p = Patient(
+            name=fake.last_name(),
+            geburtsname=geburtsname,
+            vorname=fake.first_name(),
+            geburtsdatum=fake.date_between(start_date="-90y", end_date="-1y"),
+            geschlecht=random.choice(genders),
+            meldeadresse=random.choice(adrs)
+        )
+        db.session.add(p)
+
+    db.session.commit()
+    click.echo(f"OK ✓  {n_addresses} Adressen und {n_patients} Patienten angelegt.")
+
 
 if __name__ == "__main__":
     with app.app_context():
