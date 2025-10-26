@@ -159,6 +159,12 @@
         </div>
       </div>
 
+      <div class="col-md-6">
+        {{ form.status.label(class="form-label") }}
+        {{ form.status(class="form-select") }}
+        {% for e in form.status.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+      </div>
+
       <div class="mt-2">
         {{ form.bemerkung.label(class="form-label") }}
         {{ form.bemerkung(class="form-control", rows="3") }}

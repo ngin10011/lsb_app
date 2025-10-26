@@ -12,7 +12,8 @@ from models import (
     KostenstelleEnum,
     Angehoeriger,
     Bestattungsinstitut,
-    Behoerde
+    Behoerde,
+    AuftragsStatusEnum
 )
 
 def seed_faker(n_addresses=10, n_patients=20, deterministic=True, reset=False):
@@ -119,6 +120,7 @@ def seed_faker(n_addresses=10, n_patients=20, deterministic=True, reset=False):
                                  minute=random.choice([0, 15, 30, 45])),
             kostenstelle=random.choice(kosten),
             mehraufwand=random.choice([False, False, True]),
+            status=random.choice(list(AuftragsStatusEnum)),
             bemerkung=fake.sentence(nb_words=8),
             bestattungsinstitut=(
                 random.choice(institute) if (institute and random.random() < 0.4) else None

@@ -10,9 +10,11 @@ from sqlalchemy.inspection import inspect as sa_inspect
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload, selectinload
 from models import (db, Patient, GeschlechtEnum, Adresse, 
                     Auftrag, KostenstelleEnum, Angehoeriger,
-                    Bestattungsinstitut, Behoerde)
+                    Bestattungsinstitut, Behoerde,
+                    AuftragsStatusEnum)
 from faker import Faker
 from datetime import date
 import random
@@ -214,6 +216,7 @@ def tb_new():
             bemerkung=form.bemerkung.data,
             auftragsadresse=adr_auftrag,
             bestattungsinstitut=bi_obj,
+            status=form.status.data,
             patient=p,
         )
         db.session.add(a) 
@@ -390,6 +393,27 @@ def debug_db():
         fmt=_format_value,     # Helper ins Template geben
         getattr=getattr        # für dynamischen Spaltenzugriff
     )
+
+@app.route("/patient/<int:patient_id>")
+def patient_detail(patient_id):
+    # genau EIN Loader für Patient.auftrag
+    la = joinedload(Patient.auftrag)  # alternativ: selectinload(Patient.auftrag)
+
+    p = (
+        Patient.query.options(
+            joinedload(Patient.meldeadresse),
+
+            # Angehörige + deren Adresse
+            selectinload(Patient.angehoerige).joinedload(Angehoeriger.adresse),
+
+            # alle Unterpfade von Auftrag über DIESELBE la-Instanz:
+            la.joinedload(Auftrag.auftragsadresse),
+            la.joinedload(Auftrag.bestattungsinstitut).joinedload(Bestattungsinstitut.adresse),
+            la.selectinload(Auftrag.behoerden).joinedload(Behoerde.adresse),
+        )
+        .get_or_404(patient_id)
+    )
+    return render_template("patient_detail.html", patient=p)
 
 
 @app.cli.command("seed-faker")

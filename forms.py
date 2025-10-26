@@ -7,7 +7,7 @@ try:
 except ImportError:
     from wtforms.fields import EmailField
 from wtforms.validators import DataRequired, Length, Optional, NumberRange, Email
-from models import GeschlechtEnum, KostenstelleEnum
+from models import GeschlechtEnum, KostenstelleEnum, AuftragsStatusEnum
 
 def strip_or_none(v):
     return v.strip() if isinstance(v, str) and v.strip() != "" else None
@@ -25,6 +25,13 @@ def coerce_kostenstelle(v):
     if isinstance(v, KostenstelleEnum):
         return v
     return KostenstelleEnum(v)
+
+def coerce_status(v):
+    if v in (None, "", "None"):
+        return None
+    if isinstance(v, AuftragsStatusEnum):
+        return v
+    return AuftragsStatusEnum(v)
 
 class AngehoerigerMiniForm(FlaskForm):
     name   = StringField("Name (Angehöriger)", validators=[Optional(), Length(max=120)], filters=[strip_or_none])
@@ -83,6 +90,7 @@ class TBPatientForm(PatientForm):
     auftragsuhrzeit = TimeField("Auftragsuhrzeit",   validators=[DataRequired()], format="%H:%M")
     kostenstelle    = SelectField("Kostenstelle",    validators=[DataRequired()], coerce=coerce_kostenstelle)
     mehraufwand     = BooleanField("Mehraufwand", default=False)
+    status = SelectField("Status", validators=[DataRequired()], coerce=coerce_status)
     bemerkung       = TextAreaField("Bemerkung", validators=[Optional(), Length(max=2000)])
 
     # Auftragsadresse (Select-or-Create)
@@ -102,6 +110,7 @@ class TBPatientForm(PatientForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.kostenstelle.choices = [("", "— bitte wählen —")] + [(k.value, k.value) for k in KostenstelleEnum]
+        self.status.choices = [("", "— bitte wählen —")] + [(s.value, s.value) for s in AuftragsStatusEnum]
         # Unterform-Choices pro Eintrag setzen
         for sub in self.angehoerige:
             sub.form.geschlecht.choices = [("", "— bitte wählen —")] + [(g.value, g.value) for g in GeschlechtEnum]

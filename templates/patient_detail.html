@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Patientendetails{% endblock %}
+
+{% block body %}
+{% macro show(v) -%}
+  {%- if v is none -%}—{%- elif v.value is defined and v.name is defined -%}{{ v.value }}{%- else -%}{{ v }}{%- endif -%}
+{%- endmacro %}
+
+{% macro addr(a) -%}
+  {%- if a -%}{{ a.strasse }} {{ a.hausnummer }}, {{ a.plz }} {{ a.ort }}{%- else -%}—{%- endif -%}
+{%- endmacro %}
+
+<h1 class="h4 mb-4">
+  Patient: {{ patient.name }}, {{ patient.vorname }}
+  <small class="text-muted fs-6">(#{{ patient.id }})</small>
+</h1>
+
+<div class="row g-4">
+  <!-- Patient -->
+  <div class="col-12 col-xl-6">
+    <div class="card">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Patient</h2>
+        <table class="table table-sm table-borderless align-middle mb-0">
+          <tbody>
+            <tr><th class="text-muted">Name</th><td>{{ patient.name }}</td></tr>
+            <tr><th class="text-muted">Geburtsname</th><td>{{ show(patient.geburtsname) }}</td></tr>
+            <tr><th class="text-muted">Vorname</th><td>{{ patient.vorname }}</td></tr>
+            <tr><th class="text-muted">Geburtsdatum</th><td>{{ patient.geburtsdatum }}</td></tr>
+            <tr><th class="text-muted">Geschlecht</th><td>{{ show(patient.geschlecht) }}</td></tr>
+            <tr><th class="text-muted">Meldeadresse</th><td>{{ addr(patient.meldeadresse) }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auftrag -->
+  <div class="col-12 col-xl-6">
+    <div class="card">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Auftrag</h2>
+        {% if patient.auftrag %}
+          <table class="table table-sm table-borderless align-middle mb-0">
+            <tbody>
+              <tr><th class="text-muted">Auftragsnummer</th><td>{{ patient.auftrag.auftragsnummer }}</td></tr>
+              <tr><th class="text-muted">Datum</th><td>{{ patient.auftrag.auftragsdatum }}</td></tr>
+              <tr><th class="text-muted">Uhrzeit</th><td>{{ patient.auftrag.auftragsuhrzeit }}</td></tr>
+              <tr><th class="text-muted">Kostenstelle</th><td>{{ show(patient.auftrag.kostenstelle) }}</td></tr>
+              <tr><th class="text-muted">Status</th><td>{{ show(patient.auftrag.status) }}</td></tr>
+              <tr><th class="text-muted">Mehraufwand</th><td>{{ 'Ja' if patient.auftrag.mehraufwand else 'Nein' }}</td></tr>
+              <tr><th class="text-muted">Bemerkung</th><td>{{ show(patient.auftrag.bemerkung) }}</td></tr>
+              <tr><th class="text-muted">Auftragsadresse</th><td>{{ addr(patient.auftrag.auftragsadresse) }}</td></tr>
+            </tbody>
+          </table>
+        {% else %}
+          <div class="text-muted">Kein Auftrag vorhanden.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Bestattungsinstitut -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Bestattungsinstitut</h2>
+        {% if patient.auftrag and patient.auftrag.bestattungsinstitut %}
+          {% set bi = patient.auftrag.bestattungsinstitut %}
+          <table class="table table-sm table-borderless align-middle mb-0">
+            <tbody>
+              <tr><th class="text-muted">Kurzbezeichnung</th><td>{{ bi.kurzbezeichnung }}</td></tr>
+              <tr><th class="text-muted">Firmenname</th><td>{{ bi.firmenname }}</td></tr>
+              <tr><th class="text-muted">E-Mail</th><td>{{ show(bi.email) }}</td></tr>
+              <tr><th class="text-muted">Bemerkung</th><td>{{ show(bi.bemerkung) }}</td></tr>
+              <tr><th class="text-muted">Adresse</th><td>{{ addr(bi.adresse) }}</td></tr>
+            </tbody>
+          </table>
+        {% else %}
+          <div class="text-muted">Kein Bestattungsinstitut zugeordnet.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Behörden (m:n) -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Behörden</h2>
+        {% if patient.auftrag and patient.auftrag.behoerden %}
+          <div class="table-responsive">
+            <table class="table table-sm table-striped align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Name</th>
+                  <th>E-Mail</th>
+                  <th>Bemerkung</th>
+                  <th>Adresse</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for beh in patient.auftrag.behoerden %}
+                <tr>
+                  <td>{{ beh.name }}</td>
+                  <td>{{ show(beh.email) }}</td>
+                  <td>{{ show(beh.bemerkung) }}</td>
+                  <td>{{ addr(beh.adresse) }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="text-muted">Keine Behörden zugeordnet.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Angehörige (1:n) -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Angehörige</h2>
+        {% if patient.angehoerige %}
+          <div class="table-responsive">
+            <table class="table table-sm table-striped align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Name</th>
+                  <th>Vorname</th>
+                  <th>Geschlecht</th>
+                  <th>Verwandtschaft</th>
+                  <th>Telefon</th>
+                  <th>E-Mail</th>
+                  <th>Adresse</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for ang in patient.angehoerige %}
+                <tr>
+                  <td>{{ ang.name }}</td>
+                  <td>{{ ang.vorname }}</td>
+                  <td>{{ show(ang.geschlecht) }}</td>
+                  <td>{{ show(ang.verwandtschaftsgrad) }}</td>
+                  <td>{{ show(ang.telefonnummer) }}</td>
+                  <td>{{ show(ang.email) }}</td>
+                  <td>{{ addr(ang.adresse) }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="text-muted">Keine Angehörigen erfasst.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mt-4">
+  <a href="{{ url_for('patient_overview') }}" class="btn btn-outline-secondary btn-sm">Zur Übersicht</a>
+</div>
+{% endblock %}

@@ -17,6 +17,13 @@ class KostenstelleEnum(str, Enum):
     BEHOERDE = "Behörde"
     UNBEKANNT = "unbekannt"
 
+class AuftragsStatusEnum(str, Enum):
+    READY = "READY"
+    WAIT  = "WAIT"
+    TODO  = "TODO"
+    SENT  = "SENT"
+    DONE  = "DONE"
+
 class Patient(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
@@ -74,6 +81,7 @@ class Auftrag(db.Model):
     auftragsuhrzeit = db.Column(db.Time, nullable=False)
     kostenstelle = db.Column(SqlEnum(KostenstelleEnum), nullable=False)
     mehraufwand = db.Column(db.Boolean, nullable=False)
+    status = db.Column(SqlEnum(AuftragsStatusEnum), nullable=False, index=True)
     bemerkung = db.Column(db.Text, nullable=True)
 
     # 1:1 zu Patient 
