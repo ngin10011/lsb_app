@@ -6,8 +6,10 @@ try:
     from wtforms import EmailField
 except ImportError:
     from wtforms.fields import EmailField
-from wtforms.validators import DataRequired, Length, Optional, NumberRange, Email
-from models import GeschlechtEnum, KostenstelleEnum, AuftragsStatusEnum
+from wtforms.validators import (DataRequired, Length, Optional, NumberRange, Email,
+                                ValidationError)
+from models import (GeschlechtEnum, KostenstelleEnum, AuftragsStatusEnum,
+                    Auftrag)
 
 def strip_or_none(v):
     return v.strip() if isinstance(v, str) and v.strip() != "" else None
@@ -143,3 +145,99 @@ class TBPatientForm(PatientForm):
 
     behoerden = FieldList(FormField(BehoerdeMiniForm), min_entries=1, max_entries=10)
     add_behoerde = SubmitField("Weitere Behörde hinzufügen")
+
+    def validate_auftragsnummer(self, field):
+        if field.data is None:
+            return
+        from models import Auftrag  # Import hier, um Zyklus zu vermeiden
+        exists = Auftrag.query.filter_by(auftragsnummer=field.data).first()
+        if exists:
+            raise ValidationError("Auftragsnummer bereits vergeben.")
+        
+    def validate(self, extra_validators=None):
+        ok = super().validate(extra_validators)
+
+        ks = self.kostenstelle.data  # Enum: KostenstelleEnum
+        # --- Fall A: Kostenstelle = Bestattungsinstitut ---
+        if ks == KostenstelleEnum.BESTATTUNGSINSTITUT:
+            bi_sel = self.bestattungsinstitut_id.data  # 0 = kein, >0 = bestehend, -1 = neu
+            if bi_sel in (None, 0):
+                self.bestattungsinstitut_id.errors.append(
+                    "Bitte ein Bestattungsinstitut auswählen oder neu anlegen."
+                )
+                ok = False
+            elif bi_sel == -1:
+                # Pflicht: Kurzbezeichnung + Firmenname
+                if not self.bi_kurz.data:
+                    self.bi_kurz.errors.append("Erforderlich bei Neuanlage.")
+                    ok = False
+                if not self.bi_firma.data:
+                    self.bi_firma.errors.append("Erforderlich bei Neuanlage.")
+                    ok = False
+
+                # Adresse: entweder bestehende wählen oder neue vollständig angeben
+                if self.bi_adresse_id.data == -1:
+                    for f in (self.bi_strasse, self.bi_hausnummer, self.bi_plz, self.bi_ort):
+                        if not f.data:
+                            f.errors.append("Erforderlich.")
+                            ok = False
+
+        # --- Fall B: Kostenstelle = Behörde ---
+        if ks == KostenstelleEnum.BEHOERDE:
+            any_selected = False
+
+            for sub in self.behoerden.entries:
+                f = sub.form
+                sel = f.sel_behoerde_id.data  # 0 = keine, >0 = bestehend, -1 = neu
+
+                if sel and sel > 0:
+                    any_selected = True
+                    break
+
+                if sel == -1:
+                    # Neuanlage -> Name Pflicht
+                    if not f.name.data:
+                        f.name.errors.append("Name der Behörde erforderlich.")
+                        ok = False
+
+                    # Adresse prüfen (bestehend oder neu)
+                    if f.beh_adresse_id.data == -1:
+                        for fld in (f.beh_strasse, f.beh_hausnummer, f.beh_plz, f.beh_ort):
+                            if not fld.data:
+                                fld.errors.append("Erforderlich.")
+                                ok = False
+                    any_selected = True  # gilt als „eine Behörde angegeben“
+
+            if not any_selected:
+                # Hinweis am ersten Behörden-Select anzeigen
+                if self.behoerden.entries:
+                    self.behoerden.entries[0].form.sel_behoerde_id.errors.append(
+                        "Bitte mindestens eine Behörde auswählen oder neu anlegen."
+                    )
+                ok = False
+
+        for sub in self.angehoerige.entries:
+            f = sub.form
+            # Erkennen, ob „dieser Angehörige“ überhaupt befüllt ist
+            any_person_field = any([
+                f.name.data, f.vorname.data, f.verwandtschaftsgrad.data,
+                f.telefonnummer.data, f.email.data
+            ])
+
+            if not any_person_field:
+                # komplett leer gelassen -> keine Pflicht
+                continue
+
+            # Adresse-Auswahl muss getroffen werden
+            if f.adresse_choice.data in (None, 0):
+                f.adresse_choice.errors.append("Bitte eine Adresse auswählen.")
+                ok = False
+
+            # Bei „neue Adresse“ müssen die Felder vollständig sein
+            if f.adresse_choice.data == -1:
+                for fld in (f.strasse, f.hausnummer, f.plz, f.ort):
+                    if not fld.data:
+                        fld.errors.append("Erforderlich.")
+                        ok = False
+
+        return ok

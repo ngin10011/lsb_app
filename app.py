@@ -7,7 +7,7 @@ from flask_wtf import CSRFProtect
 from forms import PatientForm, TBPatientForm
 import enum
 from sqlalchemy.inspection import inspect as sa_inspect
-from sqlalchemy import event
+from sqlalchemy import event, func
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload, selectinload
@@ -43,6 +43,10 @@ def _set_sqlite_pragma(dbapi_conn, conn_record):
     cursor.execute("PRAGMA foreign_keys=ON")
     cursor.close()
 
+def _next_auftragsnummer():
+    max_num = db.session.query(func.max(Auftrag.auftragsnummer)).scalar()
+    return (max_num or 0) + 1
+
 @app.route("/")
 def home():
     return render_template("home.html")
@@ -74,6 +78,9 @@ def tb_new():
             [(0, "— keine Behörde —"), (-1, "➕ Neue Behörde anlegen…")] + [(b.id, b.name) for b in behoerden_all]
         sub.form.beh_adresse_id.choices = [(-1, "➕ Neue Adresse anlegen…")] + [(a.id, str(a)) for a in adressen]
 
+    if request.method == "GET":
+        form.auftragsnummer.data = _next_auftragsnummer()
+    
     if request.method == "POST" and "add_relative" in request.form:
         form.angehoerige.append_entry()
         # Choices für das neu angehängte Subform setzen:
@@ -86,6 +93,10 @@ def tb_new():
             (-3, "Unbekannt"),
         ]
         return render_template("tb_new.html", form=form)
+    
+    if request.method == "POST" and ("add_relative" in request.form or "add_behoerde" in request.form):
+        if not form.auftragsnummer.data:
+            form.auftragsnummer.data = _next_auftragsnummer()
     
     if request.method == "POST" and "add_behoerde" in request.form:
         form.behoerden.append_entry()

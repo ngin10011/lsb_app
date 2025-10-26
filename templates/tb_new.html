@@ -1,426 +1,483 @@
-<!-- tb_new.html-->
+<!-- templates/tb_new.html -->
 {% extends 'base.html' %}
 
-{% block title %}New TB{% endblock %}
+{% block title %}TB anlegen{% endblock %}
 
 {% block body %}
-<h1 class="h4">TB anlegen</h1>
-
 <form method="post" novalidate>
   {{ form.hidden_tag() }}
 
-  <div class="card mb-4">
-    <div class="card-body">
-
-      <h2 class="h6 mb-3">Patient</h2>
-
-      <div class="mb-2">
-          {{ form.name.label(class="form-label") }}
-          {{ form.name(class="form-control") }}
-          {% for e in form.name.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+  <!-- Sticky Action Bar -->
+  <div class="position-sticky top-0 z-3 bg-body border-bottom py-2 mb-3" style="--bs-bg-opacity:.95;">
+    <div class="container-fluid px-0 d-flex gap-2 justify-content-between align-items-center">
+      <div class="d-flex align-items-center gap-2">
+        <span class="fs-5 fw-semibold">Neue TB</span>
+        <span class="badge text-bg-secondary">Entwurf</span>
       </div>
-
-      <div class="mb-2">
-          {{ form.geburtsname.label(class="form-label") }}
-          {{ form.geburtsname(class="form-control") }}
-          {% for e in form.geburtsname.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+      <div class="d-flex gap-2">
+        <a href="{{ url_for('patient_overview') }}" class="btn btn-outline-secondary">Abbrechen</a>
+        {{ form.submit(class="btn btn-primary px-4") }}
       </div>
+    </div>
+  </div>
 
-      <div class="mb-2">
-          {{ form.vorname.label(class="form-label") }}
-          {{ form.vorname(class="form-control") }}
-          {% for e in form.vorname.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+  <!-- Page Intro -->
+  <div class="mb-3">
+    <h1 class="h4 mb-1">Todesbescheinigung anlegen</h1>
+    <p class="text-muted mb-0">Bitte die Abschnitte der Reihe nach ausfüllen. Pflichtfelder sind gekennzeichnet.</p>
+  </div>
+
+  {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+  {% endif %}
+
+  <!-- ACCORDION -->
+  <div class="accordion" id="tbAccordion">
+
+    <!-- Patient -->
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="h-patient">
+        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#c-patient" aria-expanded="true" aria-controls="c-patient">
+          1) Patient
+        </button>
+      </h2>
+      <div id="c-patient" class="accordion-collapse collapse show" aria-labelledby="h-patient" data-bs-parent="#tbAccordion">
+        <div class="accordion-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              {{ form.name.label(class="form-label") }}
+              {{ form.name(class="form-control", placeholder="Nachname") }}
+              {% for e in form.name.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="col-md-4">
+              {{ form.geburtsname.label(class="form-label") }}
+              {{ form.geburtsname(class="form-control", placeholder="optional") }}
+              {% for e in form.geburtsname.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="col-md-4">
+              {{ form.vorname.label(class="form-label") }}
+              {{ form.vorname(class="form-control", placeholder="Vorname") }}
+              {% for e in form.vorname.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+
+            <div class="col-md-4">
+              {{ form.geburtsdatum.label(class="form-label") }}
+              {{ form.geburtsdatum(class="form-control", type="date") }}
+              {% for e in form.geburtsdatum.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="col-md-4">
+              {{ form.geschlecht.label(class="form-label") }}
+              {{ form.geschlecht(class="form-select") }}
+              {% for e in form.geschlecht.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+        </div>
       </div>
+    </div>
 
-
-      <div class="mb-2">
-          {{ form.geburtsdatum.label(class="form-label") }}
-          {{ form.geburtsdatum(class="form-control", type="date") }}
-          {% for e in form.geburtsdatum.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
-      </div>
-
-      <div class="mb-2">
-          {{ form.geschlecht.label(class="form-label") }}
-          {{ form.geschlecht(class="form-select") }}
-          {% for e in form.geschlecht.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
-      </div>
-
-      <div class="card mb-4">
-        <div class="card-body">
-          <h2 class="h6 mb-3">Meldeadresse</h2>
-
+    <!-- Meldeadresse -->
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="h-melde">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-melde" aria-expanded="false" aria-controls="c-melde">
+          2) Meldeadresse
+        </button>
+      </h2>
+      <div id="c-melde" class="accordion-collapse collapse" aria-labelledby="h-melde" data-bs-parent="#tbAccordion">
+        <div class="accordion-body">
           <div class="mb-3">
             {{ form.meldeadresse_id.label(class="form-label") }}
             {{ form.meldeadresse_id(class="form-select", id="sel-meldeadresse") }}
+            <div class="form-text">Bestehende Adresse wählen oder „Neue Adresse anlegen…“.</div>
           </div>
 
           <div id="new-address-fields" class="border rounded p-3" style="display:none;">
             <div class="row g-2">
               <div class="col-md-9">
                 {{ form.new_strasse.label(class="form-label") }}
-                {{ form.new_strasse(class="form-control") }}
+                {{ form.new_strasse(class="form-control", placeholder="Straße") }}
               </div>
               <div class="col-md-3">
                 {{ form.new_hausnummer.label(class="form-label") }}
-                {{ form.new_hausnummer(class="form-control") }}
+                {{ form.new_hausnummer(class="form-control", placeholder="Nr.") }}
               </div>
             </div>
             <div class="row g-2 mt-2">
               <div class="col-md-4">
                 {{ form.new_plz.label(class="form-label") }}
-                {{ form.new_plz(class="form-control") }}
+                {{ form.new_plz(class="form-control", placeholder="PLZ") }}
               </div>
               <div class="col-md-8">
                 {{ form.new_ort.label(class="form-label") }}
-                {{ form.new_ort(class="form-control") }}
+                {{ form.new_ort(class="form-control", placeholder="Ort") }}
               </div>
             </div>
-            <div class="form-text mt-2">Bitte alle Felder ausfüllen, wenn du eine neue Adresse anlegst.</div>
-          </div>
-
-          {% if error %}
-            <div class="text-danger mt-2">{{ error }}</div>
-          {% endif %}
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <div class="card mb-4">
-    <div class="card-body">
-      <h2 class="h6 mb-3">Auftrag</h2>
-
-      <div class="row g-2">
-        <div class="col-md-4">
-          {{ form.auftragsnummer.label(class="form-label") }}
-          {{ form.auftragsnummer(class="form-control") }}
-          {% for e in form.auftragsnummer.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
-        </div>
-
-        <div class="card mb-4">
-          <div class="card-body">
-            <!-- <h2 class="h6 mb-3">Auftragsadresse</h2> -->
-
-            <div class="mb-3">
-              {{ form.auftragsadresse_id.label(class="form-label") }}
-              {{ form.auftragsadresse_id(class="form-select", id="sel-auftragsadresse") }}
-            </div>
-
-            <div id="new-auftragsadresse-fields" class="border rounded p-3" style="display:none;">
-              <div class="row g-2">
-                <div class="col-md-9">
-                  {{ form.auftrag_strasse.label(class="form-label") }}
-                  {{ form.auftrag_strasse(class="form-control") }}
-                </div>
-                <div class="col-md-3">
-                  {{ form.auftrag_hausnummer.label(class="form-label") }}
-                  {{ form.auftrag_hausnummer(class="form-control") }}
-                </div>
-              </div>
-              <div class="row g-2 mt-2">
-                <div class="col-md-4">
-                  {{ form.auftrag_plz.label(class="form-label") }}
-                  {{ form.auftrag_plz(class="form-control") }}
-                </div>
-                <div class="col-md-8">
-                  {{ form.auftrag_ort.label(class="form-label") }}
-                  {{ form.auftrag_ort(class="form-control") }}
-                </div>
-              </div>
-              <div class="form-text mt-2">Bitte alle Felder ausfüllen, wenn du eine neue Auftragsadresse anlegst.</div>
-            </div>
+            <div class="form-text mt-2">Bitte alle Felder ausfüllen, wenn eine neue Adresse angelegt wird.</div>
           </div>
         </div>
-
-        <div class="col-md-4">
-          {{ form.auftragsdatum.label(class="form-label") }}
-          {{ form.auftragsdatum(class="form-control", type="date") }}
-          {% for e in form.auftragsdatum.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
-        </div>
-        <div class="col-md-4">
-          {{ form.auftragsuhrzeit.label(class="form-label") }}
-          {{ form.auftragsuhrzeit(class="form-control", type="time") }}
-          {% for e in form.auftragsuhrzeit.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
-        </div>
-      </div>
-
-      <div class="row g-2 mt-2">
-        <div class="col-md-6">
-          {{ form.kostenstelle.label(class="form-label") }}
-          {{ form.kostenstelle(class="form-select") }}
-          {% for e in form.kostenstelle.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
-        </div>
-        <div class="col-md-6 d-flex align-items-end">
-          <div class="form-check">
-            {{ form.mehraufwand(class="form-check-input", id="mehraufwandCheck") }}
-            <label class="form-check-label" for="mehraufwandCheck">Mehraufwand</label>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-6">
-        {{ form.status.label(class="form-label") }}
-        {{ form.status(class="form-select") }}
-        {% for e in form.status.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
-      </div>
-
-      <div class="mt-2">
-        {{ form.bemerkung.label(class="form-label") }}
-        {{ form.bemerkung(class="form-control", rows="3") }}
-        {% for e in form.bemerkung.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
       </div>
     </div>
-  </div>
 
-  <div class="card mb-4">
-    <div class="card-body">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <h2 class="h6 mb-0">Angehörige (optional, mehrere möglich)</h2>
-        {{ form.add_relative(class="btn btn-sm btn-outline-primary") }}
-      </div>
-    </div>
-  </div>
-
-
-  {% for sub in form.angehoerige %}
-    <div class="border rounded p-3 mb-3">
-      <div class="row g-2">
-        <div class="col-md-4">
-          {{ sub.form.name.label(class="form-label") }}
-          {{ sub.form.name(class="form-control") }}
-        </div>
-        <div class="col-md-4">
-          {{ sub.form.vorname.label(class="form-label") }}
-          {{ sub.form.vorname(class="form-control") }}
-        </div>
-        <div class="col-md-4">
-          {{ sub.form.geschlecht.label(class="form-label") }}
-          {{ sub.form.geschlecht(class="form-select") }}
-        </div>
-      </div>
-
-      <div class="row g-2 mt-2">
-        <div class="col-md-4">
-          {{ sub.form.verwandtschaftsgrad.label(class="form-label") }}
-          {{ sub.form.verwandtschaftsgrad(class="form-control") }}
-        </div>
-        <div class="col-md-4">
-          {{ sub.form.telefonnummer.label(class="form-label") }}
-          {{ sub.form.telefonnummer(class="form-control") }}
-        </div>
-        <div class="col-md-4">
-          {{ sub.form.email.label(class="form-label") }}
-          {{ sub.form.email(class="form-control") }}
-        </div>
-      </div>
-
-      <div class="mt-3">
-        {{ sub.form.adresse_choice.label(class="form-label") }}
-        {{ sub.form.adresse_choice(class="form-select", id="sel-ang-addr-{{ loop.index0 }}") }}
-      </div>
-
-      <div id="box-ang-addr-{{ loop.index0 }}" class="border rounded p-3" style="display:none;">
-        <div class="row g-2">
-          <div class="col-md-9">
-            {{ sub.form.strasse.label(class="form-label") }}
-            {{ sub.form.strasse(class="form-control") }}
-          </div>
-          <div class="col-md-3">
-            {{ sub.form.hausnummer.label(class="form-label") }}
-            {{ sub.form.hausnummer(class="form-control") }}
-          </div>
-        </div>
-        <div class="row g-2 mt-2">
-          <div class="col-md-4">
-            {{ sub.form.plz.label(class="form-label") }}
-            {{ sub.form.plz(class="form-control") }}
-          </div>
-          <div class="col-md-8">
-            {{ sub.form.ort.label(class="form-label") }}
-            {{ sub.form.ort(class="form-control") }}
-          </div>
-        </div>
-        <div class="form-text mt-2">Bitte alle Felder ausfüllen, wenn du eine neue Adresse anlegst.</div>
-      </div>
-    </div>
-  {% endfor %}
-
-
-  <div class="card mb-4">
-    <div class="card-body">
-      <h2 class="h6 mb-3">Bestattungsinstitut (optional)</h2>
-
-      <div class="mb-3">
-        {{ form.bestattungsinstitut_id.label(class="form-label") }}
-        {{ form.bestattungsinstitut_id(class="form-select", id="sel-bi") }}
-        <div class="form-text">Wähle ein bestehendes Institut, „neu anlegen“ – oder lasse es leer.</div>
-      </div>
-
-      <div id="new-bi-fields" class="border rounded p-3" style="display:none;">
-        <div class="row g-2">
-          <div class="col-md-4">
-            {{ form.bi_kurz.label(class="form-label") }}
-            {{ form.bi_kurz(class="form-control") }}
-          </div>
-          <div class="col-md-8">
-            {{ form.bi_firma.label(class="form-label") }}
-            {{ form.bi_firma(class="form-control") }}
-          </div>
-        </div>
-
-        <div class="row g-2 mt-2">
-          <div class="col-md-6">
-            {{ form.bi_email.label(class="form-label") }}
-            {{ form.bi_email(class="form-control") }}
-          </div>
-          <div class="col-md-6">
-            {{ form.bi_bemerkung.label(class="form-label") }}
-            {{ form.bi_bemerkung(class="form-control") }}
-          </div>
-        </div>
-
-        <h3 class="h6 mt-3">Adresse des Instituts</h3>
-
-        <div class="mb-3">
-          {{ form.bi_adresse_id.label(class="form-label") }}
-          {{ form.bi_adresse_id(class="form-select", id="sel-bi-adresse") }}
-        </div>
-
-        <div id="new-bi-adresse-fields" class="border rounded p-3" style="display:none;">
-          <div class="row g-2">
-            <div class="col-md-9">
-              {{ form.bi_strasse.label(class="form-label") }}
-              {{ form.bi_strasse(class="form-control") }}
-            </div>
-            <div class="col-md-3">
-              {{ form.bi_hausnummer.label(class="form-label") }}
-              {{ form.bi_hausnummer(class="form-control") }}
-            </div>
-          </div>
-          <div class="row g-2 mt-2">
+    <!-- Auftrag -->
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="h-auftrag">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-auftrag" aria-expanded="false" aria-controls="c-auftrag">
+          3) Auftrag
+        </button>
+      </h2>
+      <div id="c-auftrag" class="accordion-collapse collapse" aria-labelledby="h-auftrag" data-bs-parent="#tbAccordion">
+        <div class="accordion-body">
+          <div class="row g-3">
             <div class="col-md-4">
-              {{ form.bi_plz.label(class="form-label") }}
-              {{ form.bi_plz(class="form-control") }}
+              {{ form.auftragsnummer.label(class="form-label") }}
+              {{ form.auftragsnummer(class="form-control") }}
+              {% for e in form.auftragsnummer.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
             </div>
-            <div class="col-md-8">
-              {{ form.bi_ort.label(class="form-label") }}
-              {{ form.bi_ort(class="form-control") }}
+            <div class="col-md-4">
+              {{ form.auftragsdatum.label(class="form-label") }}
+              {{ form.auftragsdatum(class="form-control", type="date") }}
+              {% for e in form.auftragsdatum.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="col-md-4">
+              {{ form.auftragsuhrzeit.label(class="form-label") }}
+              {{ form.auftragsuhrzeit(class="form-control", type="time") }}
+              {% for e in form.auftragsuhrzeit.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+
+            <div class="col-md-6">
+              {{ form.kostenstelle.label(class="form-label") }}
+              {{ form.kostenstelle(class="form-select") }}
+              {% for e in form.kostenstelle.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="col-md-6 d-flex align-items-end">
+              <div class="form-check mt-4">
+                {{ form.mehraufwand(class="form-check-input", id="mehraufwandCheck") }}
+                <label class="form-check-label" for="mehraufwandCheck">Mehraufwand</label>
+              </div>
+            </div>
+
+            {% if form.status is defined %}
+            <div class="col-md-4">
+              {{ form.status.label(class="form-label") }}
+              {{ form.status(class="form-select") }}
+              {% for e in form.status.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+            </div>
+            {% endif %}
+          </div>
+
+          <hr class="my-4">
+
+          <h6 class="mb-2">Auftragsadresse</h6>
+          <div class="mb-3">
+            {{ form.auftragsadresse_id.label(class="form-label") }}
+            {{ form.auftragsadresse_id(class="form-select", id="sel-auftragsadresse") }}
+            <div class="form-text">„Wie Meldeadresse“, bestehende Adresse oder „Neu anlegen…“ wählen.</div>
+          </div>
+
+          <div id="new-auftragsadresse-fields" class="border rounded p-3" style="display:none;">
+            <div class="row g-2">
+              <div class="col-md-9">
+                {{ form.auftrag_strasse.label(class="form-label") }}
+                {{ form.auftrag_strasse(class="form-control") }}
+              </div>
+              <div class="col-md-3">
+                {{ form.auftrag_hausnummer.label(class="form-label") }}
+                {{ form.auftrag_hausnummer(class="form-control") }}
+              </div>
+            </div>
+            <div class="row g-2 mt-2">
+              <div class="col-md-4">
+                {{ form.auftrag_plz.label(class="form-label") }}
+                {{ form.auftrag_plz(class="form-control") }}
+              </div>
+              <div class="col-md-8">
+                {{ form.auftrag_ort.label(class="form-label") }}
+                {{ form.auftrag_ort(class="form-control") }}
+              </div>
             </div>
           </div>
-          <div class="form-text mt-2">Bitte alle Felder ausfüllen, wenn du eine neue Institutsadresse anlegst.</div>
+
+          <div class="mt-3">
+            {{ form.bemerkung.label(class="form-label") }}
+            {{ form.bemerkung(class="form-control", rows="3", placeholder="Freitext, max. 2000 Zeichen") }}
+            {% for e in form.bemerkung.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <div class="card mb-4">
-    <div class="card-body">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <h2 class="h6 mb-0">Behörden (optional, mehrere möglich)</h2>
-        {{ form.add_behoerde(class="btn btn-sm btn-outline-primary") }}
-      </div>
-
-      {% for sub in form.behoerden %}
-        <div class="border rounded p-3 mb-3">
-          <div class="mb-3">
-            {{ sub.form.sel_behoerde_id.label(class="form-label") }}
-            {{ sub.form.sel_behoerde_id(
-                class="form-select js-beh-select",
-                id="sel-beh-{{ loop.index0 }}",
-                **{"data-idx": loop.index0}
-            ) }}
+    <!-- Angehörige -->
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="h-ang">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-ang" aria-expanded="false" aria-controls="c-ang">
+          4) Angehörige (optional)
+        </button>
+      </h2>
+      <div id="c-ang" class="accordion-collapse collapse" aria-labelledby="h-ang" data-bs-parent="#tbAccordion">
+        <div class="accordion-body">
+          <div class="d-flex justify-content-end mb-2">
+            {{ form.add_relative(class="btn btn-sm btn-outline-primary") }}
           </div>
 
-          <div id="box-beh-new-{{ loop.index0 }}" style="display:none;">
-            <div class="row g-2">
-              <div class="col-md-6">
-                {{ sub.form.name.label(class="form-label") }}
-                {{ sub.form.name(class="form-control") }}
+          {% for sub in form.angehoerige %}
+            <div class="border rounded p-3 mb-3">
+              <div class="row g-3">
+                <div class="col-md-4">
+                  {{ sub.form.name.label(class="form-label") }}
+                  {{ sub.form.name(class="form-control") }}
+                </div>
+                <div class="col-md-4">
+                  {{ sub.form.vorname.label(class="form-label") }}
+                  {{ sub.form.vorname(class="form-control") }}
+                </div>
+                <div class="col-md-4">
+                  {{ sub.form.geschlecht.label(class="form-label") }}
+                  {{ sub.form.geschlecht(class="form-select") }}
+                </div>
+
+                <div class="col-md-4">
+                  {{ sub.form.verwandtschaftsgrad.label(class="form-label") }}
+                  {{ sub.form.verwandtschaftsgrad(class="form-control") }}
+                </div>
+                <div class="col-md-4">
+                  {{ sub.form.telefonnummer.label(class="form-label") }}
+                  {{ sub.form.telefonnummer(class="form-control") }}
+                </div>
+                <div class="col-md-4">
+                  {{ sub.form.email.label(class="form-label") }}
+                  {{ sub.form.email(class="form-control") }}
+                </div>
               </div>
-              <div class="col-md-6">
-                {{ sub.form.email.label(class="form-label") }}
-                {{ sub.form.email(class="form-control") }}
+
+              <hr class="my-3">
+
+              <div class="mb-2">
+                {{ sub.form.adresse_choice.label(class="form-label") }}
+                {{ sub.form.adresse_choice(class="form-select", id="sel-ang-addr-{{ loop.index0 }}") }}
+              </div>
+
+              <div id="box-ang-addr-{{ loop.index0 }}" class="border rounded p-3" style="display:none;">
+                <div class="row g-2">
+                  <div class="col-md-9">
+                    {{ sub.form.strasse.label(class="form-label") }}
+                    {{ sub.form.strasse(class="form-control") }}
+                  </div>
+                  <div class="col-md-3">
+                    {{ sub.form.hausnummer.label(class="form-label") }}
+                    {{ sub.form.hausnummer(class="form-control") }}
+                  </div>
+                </div>
+                <div class="row g-2 mt-2">
+                  <div class="col-md-4">
+                    {{ sub.form.plz.label(class="form-label") }}
+                    {{ sub.form.plz(class="form-control") }}
+                  </div>
+                  <div class="col-md-8">
+                    {{ sub.form.ort.label(class="form-label") }}
+                    {{ sub.form.ort(class="form-control") }}
+                  </div>
+                </div>
+                <div class="form-text mt-2">Nur ausfüllen, wenn „Neue Adresse anlegen…“ gewählt wurde.</div>
               </div>
             </div>
-            <div class="mt-2">
-              {{ sub.form.bemerkung.label(class="form-label") }}
-              {{ sub.form.bemerkung(class="form-control") }}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Bestattungsinstitut -->
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="h-bi">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-bi" aria-expanded="false" aria-controls="c-bi">
+          5) Bestattungsinstitut (optional)
+        </button>
+      </h2>
+      <div id="c-bi" class="accordion-collapse collapse" aria-labelledby="h-bi" data-bs-parent="#tbAccordion">
+        <div class="accordion-body">
+          <div class="mb-3">
+            {{ form.bestattungsinstitut_id.label(class="form-label") }}
+            {{ form.bestattungsinstitut_id(
+                class="form-select" + (" is-invalid" if form.bestattungsinstitut_id.errors else ""),
+                id="sel-bi"
+            ) }}
+            {% for e in form.bestattungsinstitut_id.errors %}
+              <div class="invalid-feedback d-block">{{ e }}</div>
+            {% endfor %}
+            <div class="form-text">Bestehendes Institut auswählen, „Neu anlegen…“ oder leer lassen.</div>
+          </div>
+
+          <div id="new-bi-fields" class="border rounded p-3" style="display:none;">
+            <div class="row g-3">
+              <div class="col-md-4">
+                {{ form.bi_kurz.label(class="form-label") }}
+                {{ form.bi_kurz(class="form-control") }}
+              </div>
+              <div class="col-md-8">
+                {{ form.bi_firma.label(class="form-label") }}
+                {{ form.bi_firma(class="form-control") }}
+              </div>
+              <div class="col-md-6">
+                {{ form.bi_email.label(class="form-label") }}
+                {{ form.bi_email(class="form-control") }}
+              </div>
+              <div class="col-md-6">
+                {{ form.bi_bemerkung.label(class="form-label") }}
+                {{ form.bi_bemerkung(class="form-control") }}
+              </div>
             </div>
 
-            <h3 class="h6 mt-3">Adresse der Behörde</h3>
+            <hr class="my-3">
 
+            <!-- <h6 class="mb-2">Adresse des Instituts</h6> -->
             <div class="mb-3">
-              {{ sub.form.beh_adresse_id.label(class="form-label") }}
-              {{ sub.form.beh_adresse_id(
-                  class="form-select js-beh-addr-select",
-                  id="sel-beh-addr-{{ loop.index0 }}",
-                  **{"data-idx": loop.index0}
-              ) }}
+              {{ form.bi_adresse_id.label(class="form-label") }}
+              {{ form.bi_adresse_id(class="form-select", id="sel-bi-adresse") }}
             </div>
 
-            <div id="box-beh-addr-{{ loop.index0 }}" class="border rounded p-3" style="display:none;">
+            <div id="new-bi-adresse-fields" class="border rounded p-3" style="display:none;">
               <div class="row g-2">
                 <div class="col-md-9">
-                  {{ sub.form.beh_strasse.label(class="form-label") }}
-                  {{ sub.form.beh_strasse(class="form-control") }}
+                  {{ form.bi_strasse.label(class="form-label") }}
+                  {{ form.bi_strasse(class="form-control") }}
                 </div>
                 <div class="col-md-3">
-                  {{ sub.form.beh_hausnummer.label(class="form-label") }}
-                  {{ sub.form.beh_hausnummer(class="form-control") }}
+                  {{ form.bi_hausnummer.label(class="form-label") }}
+                  {{ form.bi_hausnummer(class="form-control") }}
                 </div>
               </div>
               <div class="row g-2 mt-2">
                 <div class="col-md-4">
-                  {{ sub.form.beh_plz.label(class="form-label") }}
-                  {{ sub.form.beh_plz(class="form-control") }}
+                  {{ form.bi_plz.label(class="form-label") }}
+                  {{ form.bi_plz(class="form-control") }}
                 </div>
                 <div class="col-md-8">
-                  {{ sub.form.beh_ort.label(class="form-label") }}
-                  {{ sub.form.beh_ort(class="form-control") }}
+                  {{ form.bi_ort.label(class="form-label") }}
+                  {{ form.bi_ort(class="form-control") }}
                 </div>
               </div>
-              <div class="form-text mt-2">Bitte alle Felder ausfüllen, wenn du eine neue Adresse anlegst.</div>
             </div>
           </div>
         </div>
-      {% endfor %}
+      </div>
     </div>
+
+    <!-- Behörden -->
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="h-beh">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-beh" aria-expanded="false" aria-controls="c-beh">
+          6) Behörden (optional, mehrere)
+        </button>
+      </h2>
+      <div id="c-beh" class="accordion-collapse collapse" aria-labelledby="h-beh" data-bs-parent="#tbAccordion">
+        <div class="accordion-body">
+          <div class="d-flex justify-content-end mb-2">
+            {{ form.add_behoerde(class="btn btn-sm btn-outline-primary") }}
+          </div>
+
+          {% for sub in form.behoerden %}
+            <div class="border rounded p-3 mb-3">
+              <div class="mb-3">
+                {{ sub.form.sel_behoerde_id.label(class="form-label") }}
+                {{ sub.form.sel_behoerde_id(
+                    class="form-select js-beh-select" + (" is-invalid" if sub.form.sel_behoerde_id.errors else ""),
+                    id="sel-beh-{{ loop.index0 }}",
+                    **{"data-idx": loop.index0}
+                ) }}
+                {% for e in sub.form.sel_behoerde_id.errors %}
+                  <div class="invalid-feedback d-block">{{ e }}</div>
+                {% endfor %}
+                <div class="form-text">Bestehende Behörde wählen oder „Neue Behörde anlegen…“.</div>
+              </div>
+
+              <div id="box-beh-new-{{ loop.index0 }}" style="display:none;">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    {{ sub.form.name.label(class="form-label") }}
+                    {{ sub.form.name(class="form-control") }}
+                  </div>
+                  <div class="col-md-6">
+                    {{ sub.form.email.label(class="form-label") }}
+                    {{ sub.form.email(class="form-control") }}
+                  </div>
+                </div>
+                <div class="mt-2">
+                  {{ sub.form.bemerkung.label(class="form-label") }}
+                  {{ sub.form.bemerkung(class="form-control") }}
+                </div>
+
+                <hr class="my-3">
+
+                <h6 class="mb-2">Adresse der Behörde</h6>
+                <div class="mb-3">
+                  {{ sub.form.beh_adresse_id.label(class="form-label") }}
+                  {{ sub.form.beh_adresse_id(
+                      class="form-select js-beh-addr-select",
+                      id="sel-beh-addr-{{ loop.index0 }}",
+                      **{"data-idx": loop.index0}
+                  ) }}
+                </div>
+
+                <div id="box-beh-addr-{{ loop.index0 }}" class="border rounded p-3" style="display:none;">
+                  <div class="row g-2">
+                    <div class="col-md-9">
+                      {{ sub.form.beh_strasse.label(class="form-label") }}
+                      {{ sub.form.beh_strasse(class="form-control") }}
+                    </div>
+                    <div class="col-md-3">
+                      {{ sub.form.beh_hausnummer.label(class="form-label") }}
+                      {{ sub.form.beh_hausnummer(class="form-control") }}
+                    </div>
+                  </div>
+                  <div class="row g-2 mt-2">
+                    <div class="col-md-4">
+                      {{ sub.form.beh_plz.label(class="form-label") }}
+                      {{ sub.form.beh_plz(class="form-control") }}
+                    </div>
+                    <div class="col-md-8">
+                      {{ sub.form.beh_ort.label(class="form-label") }}
+                      {{ sub.form.beh_ort(class="form-control") }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+  </div> <!-- /accordion -->
+
+  <!-- Bottom Actions -->
+  <div class="d-flex gap-2 justify-content-end mt-4">
+    <a href="{{ url_for('patient_overview') }}" class="btn btn-outline-secondary">Abbrechen</a>
+    {{ form.submit(class="btn btn-primary px-4") }}
   </div>
-
-  <hr>
-  <div>
-    <h6>Bemerkung (in DB tblAuftrag speichern?)</h6>
-  </div>
-
-
-  </div>
-
-  {{ form.submit(class="btn btn-primary") }}
 </form>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  const sel = document.getElementById('sel-meldeadresse');
-  const box = document.getElementById('new-address-fields');
-  function toggleNew() {
-    box.style.display = (parseInt(sel.value, 10) === -1) ? 'block' : 'none';
-  }
-  sel.addEventListener('change', toggleNew);
-  toggleNew(); // initial
-});
+  // ===== Helper
+  const show = el => { if (el) el.style.display = 'block'; };
+  const hide = el => { if (el) el.style.display = 'none'; };
 
-document.addEventListener('DOMContentLoaded', function () {
-  const selAuf = document.getElementById('sel-auftragsadresse');
-  const boxAuf = document.getElementById('new-auftragsadresse-fields');
-  function toggleAuf() {
-    const v = parseInt(selAuf.value, 10);
-    // -1 = Neu → Felder zeigen, -2 = wie Meldeadresse → verstecken
-    boxAuf.style.display = (v === -1) ? 'block' : 'none';
-  }
-  selAuf.addEventListener('change', toggleAuf);
-  toggleAuf();
-});
+  // ===== Meldeadresse
+  (function(){
+    const sel = document.getElementById('sel-meldeadresse');
+    const box = document.getElementById('new-address-fields');
+    if (!sel || !box) return;
+    function toggle() { (parseInt(sel.value, 10) === -1) ? show(box) : hide(box); }
+    sel.addEventListener('change', toggle); toggle();
+  })();
+
+  // ===== Auftragsadresse
+  (function(){
+    const sel = document.getElementById('sel-auftragsadresse');
+    const box = document.getElementById('new-auftragsadresse-fields');
+    if (!sel || !box) return;
+    function toggle() { (parseInt(sel.value, 10) === -1) ? show(box) : hide(box); }
+    sel.addEventListener('change', toggle); toggle();
+  })();
+
 
 document.addEventListener('DOMContentLoaded', function () {
   // Toggle für alle Angehörigen-Adress-Blöcke
@@ -436,57 +493,82 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 
-document.addEventListener('DOMContentLoaded', function () {
-  // Toggle „Neues Institut“-Block
-  const selBI = document.getElementById('sel-bi');
-  const boxBI = document.getElementById('new-bi-fields');
-  function toggleBI() {
-    const v = parseInt(selBI.value, 10);
-    boxBI.style.display = (v === -1) ? 'block' : 'none'; // -1 = neu
-  }
-  selBI.addEventListener('change', toggleBI);
-  toggleBI();
 
-  // Toggle „Neue Institutsadresse“-Felder
-  const selBIAddr = document.getElementById('sel-bi-adresse');
-  const boxBIAddr = document.getElementById('new-bi-adresse-fields');
-  function toggleBIAddr() {
-    if (!selBIAddr) return; // noch nicht sichtbar
-    const v = parseInt(selBIAddr.value, 10);
-    boxBIAddr.style.display = (v === -1) ? 'block' : 'none'; // -1 = neue Adresse
-  }
-  if (selBIAddr) {
-    selBIAddr.addEventListener('change', toggleBIAddr);
-    toggleBIAddr();
-  }
+
+
+  // ===== Bestattungsinstitut
+  (function(){
+    const selBI  = document.getElementById('sel-bi');
+    const boxBI  = document.getElementById('new-bi-fields');
+    if (!selBI || !boxBI) return;
+    function toggleBI(){ (parseInt(selBI.value,10) === -1) ? show(boxBI) : hide(boxBI); }
+    selBI.addEventListener('change', toggleBI); toggleBI();
+
+    // Adresse des Instituts (nur falls Block existiert)
+    const selBIAddr = document.getElementById('sel-bi-adresse');
+    const boxBIAddr = document.getElementById('new-bi-adresse-fields');
+    if (selBIAddr && boxBIAddr){
+      function toggleBIAddr(){ (parseInt(selBIAddr.value,10) === -1) ? show(boxBIAddr) : hide(boxBIAddr); }
+      selBIAddr.addEventListener('change', toggleBIAddr); toggleBIAddr();
+    }
+  })();
+
+  // ===== Behörden – Hauptauswahl (WICHTIG: String-Vergleich!)
+  document.querySelectorAll('.js-beh-select').forEach(function(sel){
+    const idx   = sel.dataset.idx;
+    const boxNew = document.getElementById('box-beh-new-' + idx);
+    if (!boxNew) return;
+    function toggleNew(){ (sel.value === "-1") ? show(boxNew) : hide(boxNew); }
+    sel.addEventListener('change', toggleNew); toggleNew();
+  });
+
+  // ===== Behörden – Adressauswahl (WICHTIG: String-Vergleich!)
+  document.querySelectorAll('.js-beh-addr-select').forEach(function(selAddr){
+    const idx    = selAddr.dataset.idx;
+    const boxAddr= document.getElementById('box-beh-addr-' + idx);
+    if (!boxAddr) return;
+    function toggleAddr(){ (selAddr.value === "-1") ? show(boxAddr) : hide(boxAddr); }
+    selAddr.addEventListener('change', toggleAddr); toggleAddr();
+  });
 });
 
 document.addEventListener('DOMContentLoaded', function () {
-  // Haupt-Behördenauswahl (bestehend / neu / keine)
-  document.querySelectorAll('.js-beh-select').forEach(function(sel) {
-    const idx   = sel.dataset.idx;
-    const boxNew = document.getElementById('box-beh-new-' + idx);
+  // Alle Accordion-Paneels prüfen, ob irgendwo eine Fehlermeldung drin ist
+  const panes = document.querySelectorAll('.accordion .accordion-collapse');
+  let firstErrorEl = null;
 
-    function toggleNew() {
-      const v = parseInt(sel.value, 10);
-      boxNew.style.display = (v === -1) ? 'block' : 'none'; // -1 = neue Behörde
+  panes.forEach((pane) => {
+    // Suche typische Fehler-Markup (so wie du es renderst)
+    const hasError = pane.querySelector('.text-danger, .is-invalid, .invalid-feedback');
+    if (hasError) {
+      // Per Bootstrap-API "richtig" öffnen (setzt auch aria-expanded etc.)
+      try {
+        const inst = bootstrap.Collapse.getOrCreateInstance(pane, { toggle: false });
+        inst.show();
+      } catch (e) {
+        // Fallback: falls Bootstrap-Objekt nicht verfügbar ist
+        pane.classList.add('show');
+      }
+
+      // Ersten Fehler für den späteren Scroll merken
+      if (!firstErrorEl) firstErrorEl = hasError;
     }
-    sel.addEventListener('change', toggleNew);
-    toggleNew(); // initial
   });
 
-  // Adressauswahl innerhalb „neue Behörde“
-  document.querySelectorAll('.js-beh-addr-select').forEach(function(selAddr) {
-    const idx    = selAddr.dataset.idx;
-    const boxAddr = document.getElementById('box-beh-addr-' + idx);
+  // Zur ersten Fehlermeldung scrollen und das zugehörige Eingabefeld fokussieren
+  if (firstErrorEl) {
+    // Versuche, das dazugehörige Eingabeelement zu finden (nahe Umgebung)
+    const input = firstErrorEl.previousElementSibling?.matches?.('input, select, textarea')
+      ? firstErrorEl.previousElementSibling
+      : firstErrorEl.closest('.accordion-body')?.querySelector('input.is-invalid, select.is-invalid, textarea.is-invalid')
+        || firstErrorEl.closest('.accordion-body')?.querySelector('input, select, textarea');
 
-    function toggleAddr() {
-      const v = parseInt(selAddr.value, 10);
-      boxAddr.style.display = (v === -1) ? 'block' : 'none'; // -1 = neue Adresse
+    // sanft scrollen
+    (input || firstErrorEl).scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (input && typeof input.focus === 'function') {
+      setTimeout(() => input.focus({ preventScroll: true }), 250);
     }
-    selAddr.addEventListener('change', toggleAddr);
-    toggleAddr(); // initial
-  });
+  }
 });
 
 </script>
