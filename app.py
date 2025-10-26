@@ -51,35 +51,76 @@ def tb_new():
 
     # Choices für vorhandene Adressen befüllen (+ „Neu…“ Option)
     adressen = Adresse.query.order_by(Adresse.ort, Adresse.plz, Adresse.strasse, Adresse.hausnummer).all()
+    
+    # Choices für Meldeadresse
     form.meldeadresse_id.choices = [(-1, "➕ Neue Adresse anlegen…")] + [(a.id, str(a)) for a in adressen]
 
+    # 2) Choices für Auftragsadresse (mit „Wie Meldeadresse“)
+    form.auftragsadresse_id.choices = [
+        (-2, "🟰 Wie Meldeadresse"),
+        (-1, "➕ Neue Adresse anlegen…"),
+    ] + [(a.id, str(a)) for a in adressen]
+
     if form.validate_on_submit():
-        # Entweder existierende Adresse…
+        # Meldeadresse bestimmen
         if form.meldeadresse_id.data != -1:
-            adr = Adresse.query.get(form.meldeadresse_id.data)
-            if not adr:
+            adr_melde = Adresse.query.get(form.meldeadresse_id.data)
+            if not adr_melde:
                 # Fallback: sollte eigentlich nicht passieren
-                return render_template("tb_new.html", form=form, error="Adresse nicht gefunden.")
+                return render_template("tb_new.html", form=form, error="Meldeadresse nicht gefunden.")
         else:
             # …oder neue Adresse anlegen (validiere minimal)
-            missing = [f for f in ("new_strasse", "new_hausnummer", "new_plz", "new_ort")
-                       if not getattr(form, f).data]
+            required = ["new_strasse", "new_hausnummer", "new_plz", "new_ort"]
+            missing = [f for f in required if not getattr(form, f).data]
             if missing:
                 # einfache Fehlermeldung – alternativ Feldfehler setzen
-                return render_template("tb_new.html", form=form, error="Bitte alle Adressfelder ausfüllen.")
-            adr = Adresse(
+                return render_template("tb_new.html", form=form, error="Bitte alle Felder der Meldeadresse ausfüllen.")
+            adr_melde = Adresse.query.filter_by(
+                strasse=form.new_strasse.data,
+                hausnummer=form.new_hausnummer.data,
+                plz=form.new_plz.data,
+                ort=form.new_ort.data,
+            ).first() or Adresse(
                 strasse=form.new_strasse.data,
                 hausnummer=form.new_hausnummer.data,
                 plz=form.new_plz.data,
                 ort=form.new_ort.data,
             )
-            db.session.add(adr)
-            db.session.flush()  # damit adr.id verfügbar ist
+            db.session.add(adr_melde)
+            db.session.flush() 
+
+        # --- Auftragsadresse bestimmen ---
+        sel = form.auftragsadresse_id.data
+        if sel == -2:  # wie Meldeadresse
+            adr_auftrag = adr_melde
+        elif sel == -1:  # neu
+            required2 = ["auftrag_strasse", "auftrag_hausnummer", "auftrag_plz", "auftrag_ort"]
+            missing2 = [f for f in required2 if not getattr(form, f).data]
+            if missing2:
+                return render_template("tb_new.html", form=form, error="Bitte alle Felder der Auftragsadresse ausfüllen.")
+            adr_auftrag = Adresse.query.filter_by(
+                strasse=form.auftrag_strasse.data,
+                hausnummer=form.auftrag_hausnummer.data,
+                plz=form.auftrag_plz.data,
+                ort=form.auftrag_ort.data,
+            ).first() or Adresse(
+                strasse=form.auftrag_strasse.data,
+                hausnummer=form.auftrag_hausnummer.data,
+                plz=form.auftrag_plz.data,
+                ort=form.auftrag_ort.data,
+            )
+            db.session.add(adr_auftrag)
+            db.session.flush()
+        else:
+            adr_auftrag = Adresse.query.get(sel)
+            if not adr_auftrag:
+                return render_template("tb_new.html", form=form, error="Auftragsadresse nicht gefunden.")
 
 
+        # Patient anlegen
         p = Patient()
         form.populate_obj(p)
-        p.meldeadresse = adr
+        p.meldeadresse = adr_melde
 
         # --- NEU: Auftrag für diesen Patient ---
         a = Auftrag(
@@ -89,6 +130,7 @@ def tb_new():
             kostenstelle=form.kostenstelle.data,   # bereits Enum dank coerce
             mehraufwand=bool(form.mehraufwand.data),
             bemerkung=form.bemerkung.data,
+            auftragsadresse=adr_auftrag,
             patient=p,  # 1:1 Verknüpfung
         )
 

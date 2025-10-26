@@ -38,7 +38,7 @@ class PatientForm(FlaskForm):
         ]
 
 class TBPatientForm(PatientForm):
-    meldeadresse_id = SelectField("Meldeadressee", coerce=int, validators=[Optional()])
+    meldeadresse_id = SelectField("Meldeadresse", coerce=int, validators=[Optional()])
 
     # Felder für neue Adresse (werden nur benötigt, wenn „Neu…“ gewählt)
     new_strasse    = StringField("Straße",     validators=[Optional(), Length(max=120)], filters=[strip_or_none])
@@ -53,6 +53,14 @@ class TBPatientForm(PatientForm):
     kostenstelle    = SelectField("Kostenstelle",    validators=[DataRequired()], coerce=coerce_kostenstelle)
     mehraufwand     = BooleanField("Mehraufwand", default=False)
     bemerkung       = TextAreaField("Bemerkung", validators=[Optional(), Length(max=2000)])
+
+    auftragsadresse_id = SelectField("Auftragsadresse", coerce=int, validators=[Optional()])
+
+    # Felder für "Neue Auftragsadresse"
+    auftrag_strasse    = StringField("Straße",     validators=[Optional(), Length(max=120)], filters=[strip_or_none])
+    auftrag_hausnummer = StringField("Nr.",        validators=[Optional(), Length(max=20)],  filters=[strip_or_none])
+    auftrag_plz        = StringField("PLZ",        validators=[Optional(), Length(max=10)],  filters=[strip_or_none])
+    auftrag_ort        = StringField("Ort",        validators=[Optional(), Length(max=120)], filters=[strip_or_none])
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

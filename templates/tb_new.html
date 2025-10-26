@@ -9,10 +9,6 @@
 <form method="post" novalidate>
   {{ form.hidden_tag() }}
 
-  <div>
-    <p class="text-warning">Auftragsnummer</p>
-  </div>
-
   <div class="card mb-4">
     <div class="card-body">
 
@@ -101,6 +97,42 @@
           {{ form.auftragsnummer(class="form-control") }}
           {% for e in form.auftragsnummer.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
         </div>
+
+        <div class="card mb-4">
+          <div class="card-body">
+            <!-- <h2 class="h6 mb-3">Auftragsadresse</h2> -->
+
+            <div class="mb-3">
+              {{ form.auftragsadresse_id.label(class="form-label") }}
+              {{ form.auftragsadresse_id(class="form-select", id="sel-auftragsadresse") }}
+            </div>
+
+            <div id="new-auftragsadresse-fields" class="border rounded p-3" style="display:none;">
+              <div class="row g-2">
+                <div class="col-md-9">
+                  {{ form.auftrag_strasse.label(class="form-label") }}
+                  {{ form.auftrag_strasse(class="form-control") }}
+                </div>
+                <div class="col-md-3">
+                  {{ form.auftrag_hausnummer.label(class="form-label") }}
+                  {{ form.auftrag_hausnummer(class="form-control") }}
+                </div>
+              </div>
+              <div class="row g-2 mt-2">
+                <div class="col-md-4">
+                  {{ form.auftrag_plz.label(class="form-label") }}
+                  {{ form.auftrag_plz(class="form-control") }}
+                </div>
+                <div class="col-md-8">
+                  {{ form.auftrag_ort.label(class="form-label") }}
+                  {{ form.auftrag_ort(class="form-control") }}
+                </div>
+              </div>
+              <div class="form-text mt-2">Bitte alle Felder ausfüllen, wenn du eine neue Auftragsadresse anlegst.</div>
+            </div>
+          </div>
+        </div>
+
         <div class="col-md-4">
           {{ form.auftragsdatum.label(class="form-label") }}
           {{ form.auftragsdatum(class="form-control", type="date") }}
@@ -172,6 +204,19 @@ document.addEventListener('DOMContentLoaded', function () {
   sel.addEventListener('change', toggleNew);
   toggleNew(); // initial
 });
+
+document.addEventListener('DOMContentLoaded', function () {
+  const selAuf = document.getElementById('sel-auftragsadresse');
+  const boxAuf = document.getElementById('new-auftragsadresse-fields');
+  function toggleAuf() {
+    const v = parseInt(selAuf.value, 10);
+    // -1 = Neu → Felder zeigen, -2 = wie Meldeadresse → verstecken
+    boxAuf.style.display = (v === -1) ? 'block' : 'none';
+  }
+  selAuf.addEventListener('change', toggleAuf);
+  toggleAuf();
+});
+
 </script>
 
 {% endblock %}

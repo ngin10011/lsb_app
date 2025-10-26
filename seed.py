@@ -48,7 +48,7 @@ def seed_faker(n_addresses=10, n_patients=20, deterministic=True, reset=False):
 
     # 2) Patienten + Auftrag
     for _ in range(n_patients):
-        adr = random.choice(adressen)
+        adr_melde = random.choice(adressen)
 
         p = Patient(
             name=fake.last_name(),
@@ -56,10 +56,17 @@ def seed_faker(n_addresses=10, n_patients=20, deterministic=True, reset=False):
             vorname=fake.first_name(),
             geburtsdatum=fake.date_between(start_date="-95y", end_date="-1y"),
             geschlecht=random.choice(genders),
-            meldeadresse=adr,
+            meldeadresse=adr_melde,
         )
         db.session.add(p)
         db.session.flush()  # p.id verfügbar
+
+        # Auftragsadresse bestimmen (50% wie Meldeadresse, sonst andere)
+        if random.random() < 0.5:
+            adr_auftrag = adr_melde
+        else:
+            # falls nur 1 Adresse existiert, fallback auf Meldeadresse
+            adr_auftrag = random.choice(adressen) if len(adressen) > 1 else adr_melde
 
         a = Auftrag(
             auftragsnummer=fake.unique.random_int(min=0, max=9999),
@@ -70,6 +77,7 @@ def seed_faker(n_addresses=10, n_patients=20, deterministic=True, reset=False):
             mehraufwand=random.choice([False, False, True]),
             bemerkung=fake.sentence(nb_words=8),
             patient=p,
+            auftragsadresse=adr_auftrag,
         )
         db.session.add(a)
 

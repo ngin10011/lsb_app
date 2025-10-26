@@ -63,6 +63,7 @@ class Auftrag(db.Model):
     mehraufwand = db.Column(db.Boolean, nullable=False)
     bemerkung = db.Column(db.Text, nullable=True)
 
+    # 1:1 zu Patient 
     patient_id = db.Column(
         db.Integer,
         db.ForeignKey("patient.id", ondelete="CASCADE"),
@@ -70,6 +71,8 @@ class Auftrag(db.Model):
         unique=True,   # macht die Beziehung 1:1
         index=True,
     )
-
     patient = db.relationship("Patient", back_populates="auftrag")
 
+    # 1:n Adresse -> Auftrag
+    auftragsadresse_id = db.Column(db.Integer, db.ForeignKey("adresse.id"), nullable=False)
+    auftragsadresse = db.relationship("Adresse")
