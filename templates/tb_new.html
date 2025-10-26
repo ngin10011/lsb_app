@@ -167,11 +167,79 @@
     </div>
   </div>
 
-
-  <hr>
-  <div>
-    <h6>Angehörige</h6>
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="h6 mb-0">Angehörige (optional, mehrere möglich)</h2>
+        {{ form.add_relative(class="btn btn-sm btn-outline-primary") }}
+      </div>
+    </div>
   </div>
+
+
+  {% for sub in form.angehoerige %}
+    <div class="border rounded p-3 mb-3">
+      <div class="row g-2">
+        <div class="col-md-4">
+          {{ sub.form.name.label(class="form-label") }}
+          {{ sub.form.name(class="form-control") }}
+        </div>
+        <div class="col-md-4">
+          {{ sub.form.vorname.label(class="form-label") }}
+          {{ sub.form.vorname(class="form-control") }}
+        </div>
+        <div class="col-md-4">
+          {{ sub.form.geschlecht.label(class="form-label") }}
+          {{ sub.form.geschlecht(class="form-select") }}
+        </div>
+      </div>
+
+      <div class="row g-2 mt-2">
+        <div class="col-md-4">
+          {{ sub.form.verwandtschaftsgrad.label(class="form-label") }}
+          {{ sub.form.verwandtschaftsgrad(class="form-control") }}
+        </div>
+        <div class="col-md-4">
+          {{ sub.form.telefonnummer.label(class="form-label") }}
+          {{ sub.form.telefonnummer(class="form-control") }}
+        </div>
+        <div class="col-md-4">
+          {{ sub.form.email.label(class="form-label") }}
+          {{ sub.form.email(class="form-control") }}
+        </div>
+      </div>
+
+      <div class="mt-3">
+        {{ sub.form.adresse_choice.label(class="form-label") }}
+        {{ sub.form.adresse_choice(class="form-select", id="sel-ang-addr-{{ loop.index0 }}") }}
+      </div>
+
+      <div id="box-ang-addr-{{ loop.index0 }}" class="border rounded p-3" style="display:none;">
+        <div class="row g-2">
+          <div class="col-md-9">
+            {{ sub.form.strasse.label(class="form-label") }}
+            {{ sub.form.strasse(class="form-control") }}
+          </div>
+          <div class="col-md-3">
+            {{ sub.form.hausnummer.label(class="form-label") }}
+            {{ sub.form.hausnummer(class="form-control") }}
+          </div>
+        </div>
+        <div class="row g-2 mt-2">
+          <div class="col-md-4">
+            {{ sub.form.plz.label(class="form-label") }}
+            {{ sub.form.plz(class="form-control") }}
+          </div>
+          <div class="col-md-8">
+            {{ sub.form.ort.label(class="form-label") }}
+            {{ sub.form.ort(class="form-control") }}
+          </div>
+        </div>
+        <div class="form-text mt-2">Bitte alle Felder ausfüllen, wenn du eine neue Adresse anlegst.</div>
+      </div>
+    </div>
+  {% endfor %}
+
 
   <hr>
   <div>
@@ -215,6 +283,20 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   selAuf.addEventListener('change', toggleAuf);
   toggleAuf();
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+  // Toggle für alle Angehörigen-Adress-Blöcke
+  document.querySelectorAll('[id^="sel-ang-addr-"]').forEach(function(sel) {
+    const idx = sel.id.replace('sel-ang-addr-','');
+    const box = document.getElementById('box-ang-addr-' + idx);
+    function toggle() {
+      const v = parseInt(sel.value, 10);
+      box.style.display = (v === -1) ? 'block' : 'none'; // -1 = Neu
+    }
+    sel.addEventListener('change', toggle);
+    toggle();
+  });
 });
 
 </script>

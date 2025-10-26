@@ -36,6 +36,13 @@ class Patient(db.Model):
         single_parent=True,   # sinnvoll in Kombi mit delete-orphan
     )
 
+    angehoerige = db.relationship(
+        "Angehoeriger",
+        back_populates="patient",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
 class Adresse(db.Model):
     id        = db.Column(db.Integer, primary_key=True)
     strasse   = db.Column(db.String(120), nullable=False)
@@ -76,3 +83,25 @@ class Auftrag(db.Model):
     # 1:n Adresse -> Auftrag
     auftragsadresse_id = db.Column(db.Integer, db.ForeignKey("adresse.id"), nullable=False)
     auftragsadresse = db.relationship("Adresse")
+
+class Angehoeriger(db.Model):
+    __tablename__ = "angehoeriger"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120))
+    vorname = db.Column(db.String(120))
+    geschlecht = db.Column(SqlEnum(GeschlechtEnum))
+    verwandtschaftsgrad = db.Column(db.String(80))
+    telefonnummer = db.Column(db.String(50))
+    email = db.Column(db.String(120))
+
+    # Adresse optional (unbekannt erlaubt)
+    adresse_id = db.Column(db.Integer, db.ForeignKey("adresse.id"))
+    adresse = db.relationship("Adresse")
+
+    # 1:n zu Patient
+    patient_id = db.Column(db.Integer, db.ForeignKey("patient.id", ondelete="CASCADE"), nullable=False, index=True)
+    patient = db.relationship("Patient", back_populates="angehoerige")
+
+    def __repr__(self):
+        return f"{self.name}, {self.vorname}, {self.telefonnummer} {self.email}"
