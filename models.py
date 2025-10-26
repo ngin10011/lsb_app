@@ -11,6 +11,12 @@ class GeschlechtEnum(str, Enum):
     DIVERS = "divers"
     UNBEKANNT = "unbekannt"
 
+class KostenstelleEnum(str, Enum):
+    ANGEHOERIGE = "Angehörige"
+    BESTATTUNGSINSTITUT = "Bestattungsinstitut"
+    BEHOERDE = "Behörde"
+    UNBEKANNT = "unbekannt"
+
 class Patient(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
@@ -21,6 +27,14 @@ class Patient(db.Model):
 
     meldeadresse_id   = db.Column(db.Integer, db.ForeignKey("adresse.id"), nullable=False)
     meldeadresse      = db.relationship("Adresse", back_populates="patienten")
+
+    auftrag = db.relationship(
+        "Auftrag",
+        back_populates="patient",
+        uselist=False,
+        cascade="all, delete-orphan",
+        single_parent=True,   # sinnvoll in Kombi mit delete-orphan
+    )
 
 class Adresse(db.Model):
     id        = db.Column(db.Integer, primary_key=True)
@@ -39,3 +53,23 @@ class Adresse(db.Model):
 
     def __repr__(self):
         return f"{self.strasse} {self.hausnummer}, {self.plz} {self.ort}"
+
+class Auftrag(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    auftragsnummer = db.Column(db.Integer, unique=True)
+    auftragsdatum = db.Column(db.Date, nullable=False)
+    auftragsuhrzeit = db.Column(db.Time, nullable=False)
+    kostenstelle = db.Column(SqlEnum(KostenstelleEnum), nullable=False)
+    mehraufwand = db.Column(db.Boolean, nullable=False)
+    bemerkung = db.Column(db.Text, nullable=True)
+
+    patient_id = db.Column(
+        db.Integer,
+        db.ForeignKey("patient.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,   # macht die Beziehung 1:1
+        index=True,
+    )
+
+    patient = db.relationship("Patient", back_populates="auftrag")
+

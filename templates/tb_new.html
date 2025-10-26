@@ -91,30 +91,50 @@
     </div>
   </div>
 
-  <hr>
-  <div>
+  <div class="card mb-4">
+    <div class="card-body">
+      <h2 class="h6 mb-3">Auftrag</h2>
 
-    <h6>Auftrag</h6>
+      <div class="row g-2">
+        <div class="col-md-4">
+          {{ form.auftragsnummer.label(class="form-label") }}
+          {{ form.auftragsnummer(class="form-control") }}
+          {% for e in form.auftragsnummer.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="col-md-4">
+          {{ form.auftragsdatum.label(class="form-label") }}
+          {{ form.auftragsdatum(class="form-control", type="date") }}
+          {% for e in form.auftragsdatum.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="col-md-4">
+          {{ form.auftragsuhrzeit.label(class="form-label") }}
+          {{ form.auftragsuhrzeit(class="form-control", type="time") }}
+          {% for e in form.auftragsuhrzeit.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+        </div>
+      </div>
 
-  <div>
-    <p class="text-warning">Auftragsadresse (Checkbox selbe Meldeadresse)
-        ansonsten Dropdown?
-    </p>
+      <div class="row g-2 mt-2">
+        <div class="col-md-6">
+          {{ form.kostenstelle.label(class="form-label") }}
+          {{ form.kostenstelle(class="form-select") }}
+          {% for e in form.kostenstelle.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="col-md-6 d-flex align-items-end">
+          <div class="form-check">
+            {{ form.mehraufwand(class="form-check-input", id="mehraufwandCheck") }}
+            <label class="form-check-label" for="mehraufwandCheck">Mehraufwand</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-2">
+        {{ form.bemerkung.label(class="form-label") }}
+        {{ form.bemerkung(class="form-control", rows="3") }}
+        {% for e in form.bemerkung.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+      </div>
+    </div>
   </div>
 
-  <div>
-    <p class="text-warning">Auftragsdatum</p>
-  </div>
-
-  <div>
-    <p class="text-warning">Auftragsuhrzeit</p>
-  </div>
-
-  <div>
-    <p class="text-warning">Kostenstelle (vielleicht ans Ende nach den
-        anderen Kategorien?)
-    </p>
-  </div>
 
   <hr>
   <div>

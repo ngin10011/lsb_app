@@ -15,6 +15,12 @@
       <th>Geburtsdatum</th>
       <th>Geschlecht</th>
       <th>Meldeadresse</th>
+      <th>Auftragsnummer</th>
+      <th>Auftragsdatum</th>
+      <th>Auftragsuhrzeit</th>
+      <th>Kostenstelle</th>
+      <th>Mehraufwand</th>
+      <th>Bemerkung</th>
       <th></th>
     </tr>
   </thead>
@@ -27,6 +33,12 @@
         <td>{{ p.geburtsdatum.strftime('%d.%m.%Y') }}</td>
         <td>{{ p.geschlecht }}</td>
         <td>{{ p.meldeadresse }}</td>
+        <td>{{ p.auftrag.auftragsnummer }}</td>
+        <td>{{ p.auftrag.auftragsdatum }}</td>
+        <td>{{ p.auftrag.auftragsuhrzeit }}</td>
+        <td>{{ p.auftrag.kostenstelle }}</td>
+        <td>{{ p.auftrag.mehraufwand }}</td>
+        <td>{{ p.auftrag.bemerkung }}</td>
         <td><a class="btn btn-sm btn-primary" href="#">Details</a></td>
       </tr>
     {% else %}

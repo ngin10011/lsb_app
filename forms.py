@@ -1,8 +1,9 @@
 # forms.py
 from flask_wtf import FlaskForm
-from wtforms import StringField, DateField, SelectField, SubmitField
-from wtforms.validators import DataRequired, Length, Optional
-from models import GeschlechtEnum  # ✅ importiere das Enum von dort
+from wtforms import (StringField, DateField, SelectField, SubmitField, TimeField,
+                     IntegerField, BooleanField, TextAreaField)
+from wtforms.validators import DataRequired, Length, Optional, NumberRange
+from models import GeschlechtEnum, KostenstelleEnum 
 
 def strip_or_none(v):
     return v.strip() if isinstance(v, str) and v.strip() != "" else None
@@ -14,6 +15,13 @@ def coerce_geschlecht(v):
     if isinstance(v, GeschlechtEnum):
         return v
     return GeschlechtEnum(v)  # mappt Strings wie "männlich" -> Enum
+
+def coerce_kostenstelle(v):
+    if v in (None, "", "None"):
+        return None
+    if isinstance(v, KostenstelleEnum):
+        return v
+    return KostenstelleEnum(v)
 
 class PatientForm(FlaskForm):
     name = StringField("Name", validators=[DataRequired(), Length(max=120)], filters=[strip_or_none])
@@ -37,3 +45,19 @@ class TBPatientForm(PatientForm):
     new_hausnummer = StringField("Nr.",        validators=[Optional(), Length(max=20)],  filters=[strip_or_none])
     new_plz        = StringField("PLZ",        validators=[Optional(), Length(max=10)],  filters=[strip_or_none])
     new_ort        = StringField("Ort",        validators=[Optional(), Length(max=120)], filters=[strip_or_none])
+
+    # --- Auftrag ---
+    auftragsnummer  = IntegerField("Auftragsnummer", validators=[DataRequired(), NumberRange(min=1)])
+    auftragsdatum   = DateField("Auftragsdatum",     validators=[DataRequired()], format="%Y-%m-%d")
+    auftragsuhrzeit = TimeField("Auftragsuhrzeit",   validators=[DataRequired()], format="%H:%M")
+    kostenstelle    = SelectField("Kostenstelle",    validators=[DataRequired()], coerce=coerce_kostenstelle)
+    mehraufwand     = BooleanField("Mehraufwand", default=False)
+    bemerkung       = TextAreaField("Bemerkung", validators=[Optional(), Length(max=2000)])
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # vorhandene Geschlecht-Choices bleiben
+        self.kostenstelle.choices = \
+            [("", "— bitte wählen —")] + [
+                (k.value, k.value) for k in KostenstelleEnum
+            ]

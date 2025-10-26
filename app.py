@@ -6,12 +6,16 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import CSRFProtect
 from forms import PatientForm, TBPatientForm
 from enum import Enum
-from sqlalchemy import Enum as SqlEnum
-from models import db, Patient, GeschlechtEnum, Adresse
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
+from sqlalchemy.exc import IntegrityError
+from models import (db, Patient, GeschlechtEnum, Adresse, 
+                    Auftrag, KostenstelleEnum)
 from faker import Faker
 from datetime import date
 import random
 import click
+from seed import seed_faker
 
 load_dotenv()
 
@@ -28,6 +32,12 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db.init_app(app)
 csrf = CSRFProtect(app)
+
+@event.listens_for(Engine, "connect")
+def _set_sqlite_pragma(dbapi_conn, conn_record):
+    cursor = dbapi_conn.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
 
 @app.route("/")
 def home():
@@ -70,9 +80,29 @@ def tb_new():
         p = Patient()
         form.populate_obj(p)
         p.meldeadresse = adr
-        db.session.add(p)
-        db.session.commit()
+
+        # --- NEU: Auftrag für diesen Patient ---
+        a = Auftrag(
+            auftragsnummer=form.auftragsnummer.data,
+            auftragsdatum=form.auftragsdatum.data,
+            auftragsuhrzeit=form.auftragsuhrzeit.data,
+            kostenstelle=form.kostenstelle.data,   # bereits Enum dank coerce
+            mehraufwand=bool(form.mehraufwand.data),
+            bemerkung=form.bemerkung.data,
+            patient=p,  # 1:1 Verknüpfung
+        )
+
+        try:
+            db.session.add(p)  # a hängt via relationship dran (cascade)
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            # z.B. doppelte Auftragsnummer
+            form.auftragsnummer.errors.append("Auftragsnummer bereits vergeben.")
+            return render_template("tb_new.html", form=form)
+
         return redirect(url_for("patient_overview"))
+    
     return render_template("tb_new.html", form=form)
 
 # Patients #
@@ -94,41 +124,20 @@ def patient_new():
     return render_template("patient_new.html", form=form)
 
 
-
-def seed_faker(n_addresses=15, n_patients=20):
-
-    fake = Faker("de_DE")
-
-    adrs = []
-    for _ in range(n_addresses):
-        a = Adresse(
-            strasse=fake.street_name(),
-            hausnummer=fake.building_number(),
-            plz=fake.postcode(),
-            ort=fake.city()
-            # distanz=random.randint(1, 60),  # z.B. km
-        )
-        db.session.add(a)
-        adrs.append(a)
-
-    # IDs holen ohne Commit (damit Beziehung sofort gesetzt werden kann)
-    db.session.flush()
-
-    genders = list(GeschlechtEnum)
-    for _ in range(n_patients):
-        geburtsname = fake.last_name() if random.random() < 0.25 else None
-        p = Patient(
-            name=fake.last_name(),
-            geburtsname=geburtsname,
-            vorname=fake.first_name(),
-            geburtsdatum=fake.date_between(start_date="-90y", end_date="-1y"),
-            geschlecht=random.choice(genders),
-            meldeadresse=random.choice(adrs)
-        )
-        db.session.add(p)
-
-    db.session.commit()
-    click.echo(f"OK ✓  {n_addresses} Adressen und {n_patients} Patienten angelegt.")
+@app.cli.command("seed-faker")
+@click.option("--n-addresses", default=10, show_default=True, help="Anzahl Adressen")
+@click.option("--n-patients",  default=20, show_default=True, help="Anzahl Patienten")
+@click.option("--no-deterministic", is_flag=True, help="Echter Zufall (nicht reproduzierbar)")
+@click.option("--reset", is_flag=True, help="Drop+Create der Tabellen vor dem Seeding")
+def seed_faker_cmd(n_addresses, n_patients, no_deterministic, reset):
+    """Beispieldaten erzeugen (Adressen, Patienten, Aufträge)."""
+    # App-Kontext ist durch Flask-CLI bereits aktiv
+    seed_faker(
+        n_addresses=n_addresses,
+        n_patients=n_patients,
+        deterministic=not no_deterministic,
+        reset=reset,
+    )
 
 
 if __name__ == "__main__":
