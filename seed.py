@@ -10,7 +10,9 @@ from models import (
     Auftrag,
     GeschlechtEnum,
     KostenstelleEnum,
-    Angehoeriger,  # ✅ neu
+    Angehoeriger,
+    Bestattungsinstitut,
+    Behoerde
 )
 
 def seed_faker(n_addresses=10, n_patients=20, deterministic=True, reset=False):
@@ -43,6 +45,32 @@ def seed_faker(n_addresses=10, n_patients=20, deterministic=True, reset=False):
         )
         db.session.add(a)
         adressen.append(a)
+    
+    # einige Institute vorerzeugen
+    institute = []
+    for i in range(max(1, n_addresses // 5)):  # grob 20% der Adressanzahl
+        bi_addr = random.choice(adressen)
+        bi = Bestattungsinstitut(
+            kurzbezeichnung=f"BI{i+1}",
+            firmenname=fake.company(),
+            email=fake.company_email(),
+            bemerkung=fake.sentence(nb_words=6),
+            adresse=bi_addr,
+        )
+        db.session.add(bi)
+        institute.append(bi)
+    
+    behoerden_pool = []
+    for i in range(max(2, n_addresses // 4)):  # grob 25% von n_addresses
+        beh_addr = random.choice(adressen)
+        b = Behoerde(
+            name=f"Standesamt {fake.city()} {i+1}",
+            email=(fake.email() if random.random() < 0.7 else None),
+            bemerkung=(fake.sentence(nb_words=6) if random.random() < 0.3 else None),
+            adresse=beh_addr,
+        )
+        db.session.add(b)
+        behoerden_pool.append(b)
 
     db.session.flush()  # IDs verfügbar machen
 
@@ -92,11 +120,32 @@ def seed_faker(n_addresses=10, n_patients=20, deterministic=True, reset=False):
             kostenstelle=random.choice(kosten),
             mehraufwand=random.choice([False, False, True]),
             bemerkung=fake.sentence(nb_words=8),
+            bestattungsinstitut=(
+                random.choice(institute) if (institute and random.random() < 0.4) else None
+            ),
             patient=p,
             auftragsadresse=adr_auftrag,
         )
         db.session.add(a)
         db.session.flush()
+
+        if behoerden_pool:
+            k = min(random.randint(0, 2), len(behoerden_pool))
+            # ohne Duplikate
+            for b in random.sample(behoerden_pool, k):
+                a.behoerden.append(b)
+
+            # gelegentlich zusätzlich eine neue Behörde on-the-fly erzeugen
+            if random.random() < 0.1:
+                extra_addr = random.choice(adressen)
+                b_new = Behoerde(
+                    name=f"Ordnungsamt {fake.city()}",
+                    email=(fake.email() if random.random() < 0.7 else None),
+                    bemerkung=(fake.sentence(nb_words=6) if random.random() < 0.3 else None),
+                    adresse=extra_addr,
+                )
+                db.session.add(b_new); db.session.flush()
+                a.behoerden.append(b_new)
 
         # --- 0..3 Angehörige
         for _ in range(random.randint(0, 3)):
@@ -141,7 +190,7 @@ def seed_faker(n_addresses=10, n_patients=20, deterministic=True, reset=False):
         db.session.commit()
         print(
             f"✅ Seeding abgeschlossen: {n_addresses} Adressen, "
-            f"{n_patients} Patienten + Aufträge + Angehörige"
+            f"{n_patients} Patienten + Aufträge + Angehörige + Bestattungsinstitute + Behörden"
         )
     except IntegrityError as e:
         db.session.rollback()

@@ -61,6 +61,12 @@ class Adresse(db.Model):
     def __repr__(self):
         return f"{self.strasse} {self.hausnummer}, {self.plz} {self.ort}"
 
+auftrag_behoerde = db.Table(
+    "auftrag_behoerde",
+    db.Column("auftrag_id", db.Integer, db.ForeignKey("auftrag.id", ondelete="CASCADE"), primary_key=True),
+    db.Column("behoerde_id", db.Integer, db.ForeignKey("behoerde.id", ondelete="CASCADE"), primary_key=True),
+)
+
 class Auftrag(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     auftragsnummer = db.Column(db.Integer, unique=True)
@@ -84,6 +90,22 @@ class Auftrag(db.Model):
     auftragsadresse_id = db.Column(db.Integer, db.ForeignKey("adresse.id"), nullable=False)
     auftragsadresse = db.relationship("Adresse")
 
+    bestattungsinstitut_id = db.Column(
+        db.Integer,
+        db.ForeignKey("bestattungsinstitut.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True
+    )
+    bestattungsinstitut = db.relationship("Bestattungsinstitut", back_populates="auftraege")
+
+    behoerden = db.relationship(
+        "Behoerde",
+        secondary=auftrag_behoerde,
+        lazy="selectin",
+        backref=db.backref("auftraege", lazy="selectin"),
+        cascade="save-update",
+    )
+
 class Angehoeriger(db.Model):
     __tablename__ = "angehoeriger"
 
@@ -105,3 +127,41 @@ class Angehoeriger(db.Model):
 
     def __repr__(self):
         return f"{self.name}, {self.vorname}, {self.telefonnummer} {self.email}"
+    
+class Bestattungsinstitut(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    kurzbezeichnung = db.Column(db.String(80), nullable=False, unique=True)
+    firmenname = db.Column(db.String(200), nullable=False)
+
+    adresse_id = db.Column(db.Integer, db.ForeignKey("adresse.id"))
+    adresse = db.relationship("Adresse")
+
+    email = db.Column(db.String(120))
+    bemerkung = db.Column(db.Text)
+
+    # Beziehung zu Auftrag: 1:n
+    auftraege = db.relationship(
+        "Auftrag",
+        back_populates="bestattungsinstitut",
+        cascade="all, delete",
+        passive_deletes=True,
+    )
+
+    def __repr__(self):
+        return f"{self.kurzbezeichnung} ({self.firmenname})"
+
+
+class Behoerde(db.Model):
+    __tablename__ = "behoerde"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    email = db.Column(db.String(120))
+    bemerkung = db.Column(db.Text)
+
+    adresse_id = db.Column(db.Integer, db.ForeignKey("adresse.id"), nullable=False)
+    adresse = db.relationship("Adresse")
+
+    def __repr__(self):
+        return f"{self.name} ({self.adresse})"
+    

@@ -11,7 +11,8 @@ from sqlalchemy import event
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
 from models import (db, Patient, GeschlechtEnum, Adresse, 
-                    Auftrag, KostenstelleEnum, Angehoeriger)
+                    Auftrag, KostenstelleEnum, Angehoeriger,
+                    Bestattungsinstitut, Behoerde)
 from faker import Faker
 from datetime import date
 import random
@@ -55,6 +56,22 @@ def tb_new():
     form.meldeadresse_id.choices = [(-1, "➕ Neue Adresse anlegen…")] + [(a.id, str(a)) for a in adressen]
     form.auftragsadresse_id.choices = [(-2, "🟰 Wie Meldeadresse"), (-1, "➕ Neue Adresse anlegen…")] + [(a.id, str(a)) for a in adressen]
 
+    # ➕ Bestattungsinstitut-Choices
+    institute = Bestattungsinstitut.query.order_by(Bestattungsinstitut.kurzbezeichnung).all()
+    form.bestattungsinstitut_id.choices = [
+        (0, "— kein Bestattungsinstitut —"),
+        (-1, "➕ Neues Bestattungsinstitut anlegen…"),
+    ] + [(bi.id, f"{bi.kurzbezeichnung} – {bi.firmenname}") for bi in institute]
+
+    form.bi_adresse_id.choices = [(-1, "➕ Neue Adresse anlegen…")] + [(a.id, str(a)) for a in adressen]
+
+    # Behörden-Choices (pro Subform):
+    behoerden_all = Behoerde.query.order_by(Behoerde.name).all()
+    for sub in form.behoerden:
+        sub.form.sel_behoerde_id.choices = \
+            [(0, "— keine Behörde —"), (-1, "➕ Neue Behörde anlegen…")] + [(b.id, b.name) for b in behoerden_all]
+        sub.form.beh_adresse_id.choices = [(-1, "➕ Neue Adresse anlegen…")] + [(a.id, str(a)) for a in adressen]
+
     if request.method == "POST" and "add_relative" in request.form:
         form.angehoerige.append_entry()
         # Choices für das neu angehängte Subform setzen:
@@ -67,6 +84,16 @@ def tb_new():
             (-3, "Unbekannt"),
         ]
         return render_template("tb_new.html", form=form)
+    
+    if request.method == "POST" and "add_behoerde" in request.form:
+        form.behoerden.append_entry()
+        # Choices für das neu angehängte Subform setzen:
+        sub = form.behoerden[-1].form
+        sub.sel_behoerde_id.choices = \
+            [(0, "— keine Behörde —"), (-1, "➕ Neue Behörde anlegen…")] + [(b.id, b.name) for b in behoerden_all]
+        sub.beh_adresse_id.choices = [(-1, "➕ Neue Adresse anlegen…")] + [(a.id, str(a)) for a in adressen]
+        return render_template("tb_new.html", form=form)
+
 
 
     if form.validate_on_submit():
@@ -125,6 +152,57 @@ def tb_new():
         p.geburtsdatum = form.geburtsdatum.data
         p.geschlecht   = form.geschlecht.data
         p.meldeadresse = adr_melde
+        db.session.add(p)
+
+        # 3) Bestattungsinstitut bestimmen (optional)
+        bi_sel = form.bestattungsinstitut_id.data
+        bi_obj = None
+
+        if bi_sel == 0:
+            bi_obj = None
+        elif bi_sel == -1:
+            # Minimalpflichten prüfen: Kurzbezeichnung & Firmenname
+            if not form.bi_kurz.data or not form.bi_firma.data:
+                return render_template("tb_new.html", form=form, error="Bitte Kurzbezeichnung und Firmenname für das neue Bestattungsinstitut angeben.")
+
+            # Adresse für das neue Institut bestimmen:
+            if form.bi_adresse_id.data != -1:
+                bi_addr = Adresse.query.get(form.bi_adresse_id.data)
+                if not bi_addr:
+                    return render_template("tb_new.html", form=form, error="Ausgewählte Institutsadresse nicht gefunden.")
+            else:
+                # Neue Adresse anlegen → alle Felder nötig
+                req_bi_addr = [form.bi_strasse.data, form.bi_hausnummer.data, form.bi_plz.data, form.bi_ort.data]
+                if any(not v for v in req_bi_addr):
+                    return render_template("tb_new.html", form=form, error="Bitte alle Felder der neuen Institutsadresse ausfüllen.")
+                bi_addr = Adresse.query.filter_by(
+                    strasse=form.bi_strasse.data,
+                    hausnummer=form.bi_hausnummer.data,
+                    plz=form.bi_plz.data,
+                    ort=form.bi_ort.data,
+                ).first() or Adresse(
+                    strasse=form.bi_strasse.data,
+                    hausnummer=form.bi_hausnummer.data,
+                    plz=form.bi_plz.data,
+                    ort=form.bi_ort.data,
+                )
+                db.session.add(bi_addr)
+                db.session.flush()
+
+            # Institut selbst
+            bi_obj = Bestattungsinstitut(
+                kurzbezeichnung=form.bi_kurz.data,
+                firmenname=form.bi_firma.data,
+                email=form.bi_email.data,
+                bemerkung=form.bi_bemerkung.data,
+                adresse=bi_addr,
+            )
+            db.session.add(bi_obj)
+            db.session.flush()
+        else:
+            bi_obj = Bestattungsinstitut.query.get(bi_sel)
+            if not bi_obj:
+                return render_template("tb_new.html", form=form, error="Bestattungsinstitut nicht gefunden.")
 
         # --- Auftrag anlegen ---
         a = Auftrag(
@@ -135,9 +213,10 @@ def tb_new():
             mehraufwand=bool(form.mehraufwand.data),
             bemerkung=form.bemerkung.data,
             auftragsadresse=adr_auftrag,
+            bestattungsinstitut=bi_obj,
             patient=p,
         )
-        db.session.add(p)  # a hängt via relationship dran
+        db.session.add(a) 
 
         # --- Mehrere Angehörige anlegen ---
         for sub in form.angehoerige.entries:
@@ -181,6 +260,54 @@ def tb_new():
                 patient=p,
             )
             db.session.add(ang)
+
+        # ▼ Mehrere Behörden
+        for sub in form.behoerden.entries:
+            f = sub.form
+            sel_id = f.sel_behoerde_id.data
+            if sel_id == 0:
+                continue  # keine Behörde für diesen Eintrag
+
+            if sel_id > 0:
+                b = Behoerde.query.get(sel_id)
+                if b:
+                    a.behoerden.append(b)
+                continue
+
+            # Neuanlage:
+            if not f.name.data:
+                return render_template("tb_new.html", form=form, error="Bitte Namen der neuen Behörde angeben.")
+
+            # Adresse bestimmen
+            if f.beh_adresse_id.data != -1:
+                beh_addr = Adresse.query.get(f.beh_adresse_id.data)
+                if not beh_addr:
+                    return render_template("tb_new.html", form=form, error="Ausgewählte Behördenadresse nicht gefunden.")
+            else:
+                req = [f.beh_strasse.data, f.beh_hausnummer.data, f.beh_plz.data, f.beh_ort.data]
+                if any(not v for v in req):
+                    return render_template("tb_new.html", form=form, error="Bitte alle Felder der neuen Behördenadresse ausfüllen.")
+                beh_addr = Adresse.query.filter_by(
+                    strasse=f.beh_strasse.data,
+                    hausnummer=f.beh_hausnummer.data,
+                    plz=f.beh_plz.data,
+                    ort=f.beh_ort.data,
+                ).first() or Adresse(
+                    strasse=f.beh_strasse.data,
+                    hausnummer=f.beh_hausnummer.data,
+                    plz=f.beh_plz.data,
+                    ort=f.beh_ort.data,
+                )
+                db.session.add(beh_addr); db.session.flush()
+
+            b_new = Behoerde(
+                name=f.name.data,
+                email=f.email.data,
+                bemerkung=f.bemerkung.data,
+                adresse=beh_addr,
+            )
+            db.session.add(b_new); db.session.flush()
+            a.behoerden.append(b_new)
 
         try:
             db.session.commit()

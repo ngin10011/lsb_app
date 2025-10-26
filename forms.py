@@ -53,6 +53,22 @@ class PatientForm(FlaskForm):
         super().__init__(*args, **kwargs)
         self.geschlecht.choices = [("", "— bitte wählen —")] + [(g.value, g.value) for g in GeschlechtEnum]
 
+class BehoerdeMiniForm(FlaskForm):
+    # Auswahl: 0 = keine, >0 = bestehende ID, -1 = neu
+    sel_behoerde_id = SelectField("Behörde", coerce=int, validators=[Optional()])
+
+    # Nur für Neuanlage
+    name = StringField("Name", validators=[Optional(), Length(max=200)], filters=[strip_or_none])
+    email = EmailField("E-Mail", validators=[Optional(), Email(), Length(max=120)], filters=[strip_or_none])
+    bemerkung = TextAreaField("Bemerkung", validators=[Optional(), Length(max=2000)])
+
+    # Adresse (Select-or-Create) für neue Behörde
+    beh_adresse_id = SelectField("Adressauswahl", coerce=int, validators=[Optional()])
+    beh_strasse    = StringField("Straße",     validators=[Optional(), Length(max=120)], filters=[strip_or_none])
+    beh_hausnummer = StringField("Nr.",        validators=[Optional(), Length(max=20)],  filters=[strip_or_none])
+    beh_plz        = StringField("PLZ",        validators=[Optional(), Length(max=10)],  filters=[strip_or_none])
+    beh_ort        = StringField("Ort",        validators=[Optional(), Length(max=120)], filters=[strip_or_none])
+
 class TBPatientForm(PatientForm):
     # Meldeadresse (Select-or-Create)
     meldeadresse_id = SelectField("Meldeadresse", coerce=int, validators=[Optional()])
@@ -96,3 +112,25 @@ class TBPatientForm(PatientForm):
                 (-1, "➕ Neue Adresse anlegen…"),
                 (-3, "Unbekannt"),
             ]
+
+    bestattungsinstitut_id = SelectField(
+        "Bestattungsinstitut",
+        coerce=int,
+        validators=[Optional()]
+    )
+    bi_kurz = StringField("Kurzbezeichnung", validators=[Optional(), Length(max=80)],  filters=[strip_or_none])
+    bi_firma = StringField("Firmenname",     validators=[Optional(), Length(max=200)], filters=[strip_or_none])
+    bi_email = EmailField("E-Mail",          validators=[Optional(), Email(), Length(max=120)], filters=[strip_or_none])
+    bi_bemerkung = TextAreaField("Bemerkung", validators=[Optional(), Length(max=2000)])
+
+    bi_adresse_id = SelectField("Adresse des Instituts", coerce=int, validators=[Optional()])
+
+    # Adresse für „neues“ Institut
+    bi_strasse    = StringField("Straße",     validators=[Optional(), Length(max=120)], filters=[strip_or_none])
+    bi_hausnummer = StringField("Nr.",        validators=[Optional(), Length(max=20)],  filters=[strip_or_none])
+    bi_plz        = StringField("PLZ",        validators=[Optional(), Length(max=10)],  filters=[strip_or_none])
+    bi_ort        = StringField("Ort",        validators=[Optional(), Length(max=120)], filters=[strip_or_none])
+
+
+    behoerden = FieldList(FormField(BehoerdeMiniForm), min_entries=1, max_entries=10)
+    add_behoerde = SubmitField("Weitere Behörde hinzufügen")
