@@ -1,0 +1,49 @@
+{# templates/debug_db.html #}
+{% extends 'base.html' %}
+
+{% block title %}DB-Übersicht{% endblock %}
+
+{% block body %}
+<h1 class="h4 mb-3">DB-Übersicht</h1>
+<p class="text-muted">
+  Parameter: <code>?limit=50</code>, <code>?only=Patient,Adresse</code>
+</p>
+
+{% for m in models %}
+  <div class="card mb-4">
+    <div class="card-body">
+      <h2 class="h6 mb-3">{{ m.name }} ({{ m.rows|length }} Zeilen)</h2>
+
+      {% if m.columns %}
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered align-middle">
+          <thead class="table-light">
+            <tr>
+              {% for c in m.columns %}
+                <th>{{ c }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for obj in m.rows %}
+              <tr>
+                {% for c in m.columns %}
+                  {% set val = getattr(obj, c) %}
+                  <td>{{ fmt(val) }}</td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <div class="text-muted">Keine Spalten gefunden.</div>
+      {% endif %}
+    </div>
+  </div>
+{% endfor %}
+
+{% if not models %}
+  <div class="alert alert-info">Keine Modelle gefunden (oder Filter leer).</div>
+{% endif %}
+{% endblock %}

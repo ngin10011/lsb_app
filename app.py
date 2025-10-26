@@ -5,7 +5,8 @@ from dotenv import load_dotenv
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import CSRFProtect
 from forms import PatientForm, TBPatientForm
-from enum import Enum
+import enum
+from sqlalchemy.inspection import inspect as sa_inspect
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
@@ -210,6 +211,58 @@ def patient_new():
         db.session.commit()
         return redirect(url_for("home"))
     return render_template("patient_new.html", form=form)
+
+def _all_models():
+    """Gibt alle gemappten Klassen von db.Model zurück (SQLA 2.x kompatibel)."""
+    # Flask-SQLAlchemy 3.x nutzt SQLAlchemy 2.x; darüber kommen wir an alle Mapper.
+    return sorted((m.class_ for m in db.Model.registry.mappers), key=lambda c: c.__name__)
+
+def _get_columns(model_cls):
+    """Listet alle Spaltennamen (keine Relationships)."""
+    mapper = sa_inspect(model_cls)
+    return [col.key for col in mapper.columns]  # nur echte Columns
+
+def _format_value(v):
+    """Schönere Darstellung in der Tabelle (Enums -> value)."""
+    if isinstance(v, enum.Enum):
+        return v.value
+    return v
+
+@app.route("/debug/db")
+def debug_db():
+    """
+    Übersicht aller Tabellen/Modelle.
+    ?limit=50  -> Anzahl der Zeilen pro Tabelle
+    ?only=Patient,Adresse -> nur bestimmte Modelle anzeigen (Komma-separiert)
+    """
+    try:
+        limit = int(request.args.get("limit", 50))
+    except ValueError:
+        limit = 50
+
+    only = request.args.get("only")
+    only_set = {s.strip() for s in only.split(",")} if only else None
+
+    models_payload = []
+    for cls in _all_models():
+        if only_set and cls.__name__ not in only_set:
+            continue
+
+        cols = _get_columns(cls)
+        rows = cls.query.limit(limit).all()  # bewusst limitiert
+
+        models_payload.append({
+            "name": cls.__name__,
+            "columns": cols,
+            "rows": rows,
+        })
+
+    return render_template(
+        "debug_db.html",
+        models=models_payload,
+        fmt=_format_value,     # Helper ins Template geben
+        getattr=getattr        # für dynamischen Spaltenzugriff
+    )
 
 
 @app.cli.command("seed-faker")
