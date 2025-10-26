@@ -3,20 +3,23 @@ import random
 from datetime import date, time, timedelta
 from faker import Faker
 from sqlalchemy.exc import IntegrityError
-from models import db, Patient, Adresse, Auftrag, GeschlechtEnum, KostenstelleEnum
+from models import (
+    db,
+    Patient,
+    Adresse,
+    Auftrag,
+    GeschlechtEnum,
+    KostenstelleEnum,
+    Angehoeriger,  # ✅ neu
+)
 
 def seed_faker(n_addresses=10, n_patients=20, deterministic=True, reset=False):
     """
     Erzeugt Beispiel-Daten:
       - Adressen
       - Patienten (mit Meldeadresse)
-      - 1:1 Auftrag pro Patient
-
-    Args:
-        n_addresses (int): Anzahl zu erzeugender Adressen
-        n_patients (int):  Anzahl zu erzeugender Patienten
-        deterministic (bool): Gleiche Zufallsdaten bei jedem Lauf
-        reset (bool): Drop+Create aller Tabellen vor dem Seeding
+      - 1:1 Auftrag pro Patient (inkl. Auftragsadresse)
+      - 0..3 Angehörige pro Patient (mit Adresslogik)
     """
     if deterministic:
         Faker.seed(1234)
@@ -35,7 +38,7 @@ def seed_faker(n_addresses=10, n_patients=20, deterministic=True, reset=False):
             strasse=fake.street_name(),
             hausnummer=fake.building_number(),
             plz=fake.postcode(),
-            ort=fake.city()
+            ort=fake.city(),
             # distanz=random.randint(1, 60),
         )
         db.session.add(a)
@@ -46,10 +49,23 @@ def seed_faker(n_addresses=10, n_patients=20, deterministic=True, reset=False):
     genders = list(GeschlechtEnum)
     kosten = list(KostenstelleEnum)
 
-    # 2) Patienten + Auftrag
+    # einfache Liste typischer Verwandtschaftsgrade
+    verwandtschaftsgrade = [
+        "Ehepartner", "Ehefrau", "Ehemann", "Lebenspartner",
+        "Mutter", "Vater", "Tochter", "Sohn",
+        "Schwester", "Bruder",
+        "Tante", "Onkel", "Nichte", "Neffe",
+        "Cousin", "Cousine",
+        "Freund", "Freundin",
+        "Betreuer", "Nachbar",
+    ]
+
+    # 2) Patienten + Auftrag + Angehörige
     for _ in range(n_patients):
+        # --- Meldeadresse wählen
         adr_melde = random.choice(adressen)
 
+        # --- Patient
         p = Patient(
             name=fake.last_name(),
             geburtsname=(fake.last_name() if random.random() < 0.25 else None),
@@ -61,13 +77,13 @@ def seed_faker(n_addresses=10, n_patients=20, deterministic=True, reset=False):
         db.session.add(p)
         db.session.flush()  # p.id verfügbar
 
-        # Auftragsadresse bestimmen (50% wie Meldeadresse, sonst andere)
+        # --- Auftragsadresse bestimmen (50% wie Meldeadresse, sonst andere)
         if random.random() < 0.5:
             adr_auftrag = adr_melde
         else:
-            # falls nur 1 Adresse existiert, fallback auf Meldeadresse
             adr_auftrag = random.choice(adressen) if len(adressen) > 1 else adr_melde
 
+        # --- Auftrag
         a = Auftrag(
             auftragsnummer=fake.unique.random_int(min=0, max=9999),
             auftragsdatum=date.today() - timedelta(days=random.randint(0, 30)),
@@ -80,10 +96,53 @@ def seed_faker(n_addresses=10, n_patients=20, deterministic=True, reset=False):
             auftragsadresse=adr_auftrag,
         )
         db.session.add(a)
+        db.session.flush()
+
+        # --- 0..3 Angehörige
+        for _ in range(random.randint(0, 3)):
+            # Adresse für Angehörigen: Wahrscheinlichkeiten feinjustierbar
+            choice = random.choices(
+                population=["melde", "auftrag", "neu", "unbekannt"],
+                weights=[0.4, 0.25, 0.25, 0.10],
+                k=1
+            )[0]
+
+            if choice == "melde":
+                ang_addr = adr_melde
+            elif choice == "auftrag":
+                ang_addr = adr_auftrag
+            elif choice == "neu":
+                # neue Adresse anlegen und in den Pool hängen (damit auch später gewählt werden kann)
+                ang_addr = Adresse(
+                    strasse=fake.street_name(),
+                    hausnummer=fake.building_number(),
+                    plz=fake.postcode(),
+                    ort=fake.city(),
+                )
+                db.session.add(ang_addr)
+                db.session.flush()
+                adressen.append(ang_addr)
+            else:  # "unbekannt"
+                ang_addr = None
+
+            ang = Angehoeriger(
+                name=fake.last_name(),
+                vorname=fake.first_name(),
+                geschlecht=random.choice(genders),
+                verwandtschaftsgrad=random.choice(verwandtschaftsgrade),
+                telefonnummer=fake.phone_number(),
+                email=fake.email(),
+                adresse=ang_addr,
+                patient=p,
+            )
+            db.session.add(ang)
 
     try:
         db.session.commit()
-        print(f"✅ Seeding abgeschlossen: {n_addresses} Adressen, {n_patients} Patienten + Aufträge")
+        print(
+            f"✅ Seeding abgeschlossen: {n_addresses} Adressen, "
+            f"{n_patients} Patienten + Aufträge + Angehörige"
+        )
     except IntegrityError as e:
         db.session.rollback()
         print(f"❌ Commit-Fehler (evtl. doppelte Auftragsnummer ohne Reset?): {e}")
