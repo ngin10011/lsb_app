@@ -258,6 +258,9 @@
                     id="sel-ang-addr-{{ loop.index0 }}",
                     **{"data-idx": loop.index0}
                 ) }}
+                {% for e in sub.form.adresse_choice.errors %}
+                  <div class="invalid-feedback d-block">{{ e }}</div>
+                {% endfor %}
               </div>
 
               {# Eingabefelder für "Neue Adresse anlegen…" #}

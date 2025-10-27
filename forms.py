@@ -243,4 +243,73 @@ class TBPatientForm(PatientForm):
                         fld.errors.append("Erforderlich.")
                         ok = False
 
+        # --- Fall C: Kostenstelle = Angehörige ---
+        if ks == KostenstelleEnum.ANGEHOERIGE:
+            any_valid_relative = False
+
+            for sub in self.angehoerige.entries:
+                f = sub.form
+                choice = f.adresse_choice.data  # int: 0, -1, -2, -3, -4
+
+                # Für diesen Kostenstellen-Fall interessieren nur Adressangaben.
+                # Personenfelder (Name/Vorname etc.) sind KEINE Pflicht.
+                if choice in (-2, -4):
+                    any_valid_relative = True
+                    continue
+
+                if choice == -1:
+                    # neue Adresse -> alle Felder erforderlich
+                    missing = []
+                    for fld in (f.strasse, f.hausnummer, f.plz, f.ort):
+                        if not fld.data:
+                            fld.errors.append("Erforderlich.")
+                            missing.append(fld)
+                    if missing:
+                        f.adresse_choice.errors.append("Bitte neue Adresse vollständig angeben.")
+                        ok = False
+                    else:
+                        any_valid_relative = True
+                    continue
+
+                # choice 0 (= bitte wählen) oder -3 (= unbekannt) oder None -> nicht zulässig
+                if choice in (0, -3, None):
+                    f.adresse_choice.errors.append(
+                        "Bitte „Wie Meldeadresse“, „Wie Auftragsadresse“ oder „Neue Adresse anlegen…“ wählen."
+                    )
+                    ok = False
+
+            if not any_valid_relative:
+                # Falls niemand gültig adressiert wurde, zeige am ersten Eintrag eine Sammelmeldung
+                if self.angehoerige.entries:
+                    first = self.angehoerige.entries[0].form
+                    first.adresse_choice.errors.append(
+                        "Bei Kostenstelle „Angehörige“ muss mindestens ein Angehöriger mit gültiger Adresse angegeben werden."
+                    )
+                ok = False
+
+            # WICHTIG: In diesem Fall KEINE weitere Pflichtprüfung der Personenfelder.
+            # Daher nicht in den allgemeinen Angehörigen-Block unten "hineinlaufen".
+            return ok
+
+        # --- Standardprüfung für Angehörige in allen anderen Fällen ---
+        for sub in self.angehoerige.entries:
+            f = sub.form
+            any_person_field = any([
+                f.name.data, f.vorname.data, f.verwandtschaftsgrad.data,
+                f.telefonnummer.data, f.email.data
+            ])
+
+            if not any_person_field:
+                continue  # komplett leer -> keine Pflicht
+
+            if f.adresse_choice.data in (None, 0):
+                f.adresse_choice.errors.append("Bitte eine Adresse auswählen.")
+                ok = False
+
+            if f.adresse_choice.data == -1:
+                for fld in (f.strasse, f.hausnummer, f.plz, f.ort):
+                    if not fld.data:
+                        fld.errors.append("Erforderlich.")
+                        ok = False
+
         return ok
