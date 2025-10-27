@@ -145,6 +145,7 @@ class Bestattungsinstitut(db.Model):
     adresse = db.relationship("Adresse")
 
     email = db.Column(db.String(120))
+    anschreibbar = db.Column(db.Boolean, default=True)
     bemerkung = db.Column(db.Text)
 
     # Beziehung zu Auftrag: 1:n
