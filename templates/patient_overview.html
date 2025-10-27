@@ -1,53 +1,84 @@
-<!-- patient_overview.html -->
-{% extends 'base.html' %}
+<!-- patient_overview.html -->>
+{% extends "base.html" %}
 
-{% block title %}Patients Overview{% endblock %}
+{% block title %}Patientenübersicht{% endblock %}
 
 {% block body %}
-<h1 class="h4 mb-3">Patientenübersicht</h1>
+<h1 class="h4 mb-4">Patientenübersicht</h1>
 
-<table class="table table-striped table-sm align-middle">
-  <thead>
-    <tr>
-      <th>#</th>
-      <th>Name</th>
-      <th>Vorname</th>
-      <th>Geburtsdatum</th>
-      <th>Geschlecht</th>
-      <th>Meldeadresse</th>
-      <th>Behörden</th>
-      <th>Auftragsdatum</th>
-      <th>Auftragsuhrzeit</th>
-      <th>Auftragsadresse</th>
-      <th>Kostenstelle</th>
-      <th>Mehraufwand</th>
-      <th>Bemerkung</th>
-      <th>Angehöriger</th>
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for p in patients %}
+{% macro addr(a) -%}
+  {%- if a -%}{{ a.strasse }} {{ a.hausnummer }}, {{ a.plz }} {{ a.ort }}{%- else -%}—{%- endif -%}
+{%- endmacro %}
+
+<div class="table-responsive">
+  <table class="table table-sm table-striped align-middle">
+    <thead class="table-light">
       <tr>
-        <td>{{ p.id }}</td>
+        <th>Name</th>
+        <th>Vorname</th>
+        <th>Geburtsdatum</th>
+        <th>Auftragsadresse</th>
+        <th>Auftragsdatum</th>
+        <th>Status</th>
+        <th>Kostenstelle</th>
+        <th>Angehörige</th>
+        <th>Bestattungsinstitut</th>
+        <th>Behörden</th>
+        <th></th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {% for p in patients %}
+      {% set a = p.auftrag %}
+      <tr>
         <td>{{ p.name }}</td>
         <td>{{ p.vorname }}</td>
-        <td>{{ p.geburtsdatum.strftime('%d.%m.%Y') }}</td>
-        <td>{{ p.geschlecht }}</td>
-        <td>{{ p.meldeadresse }}</td>
-        <td>{{ p.auftrag.behoerden }}</td>
-        <td>{{ p.auftrag.auftragsdatum }}</td>
-        <td>{{ p.auftrag.auftragsuhrzeit }}</td>
-        <td>{{ p.auftrag.auftragsadresse }}</td>
-        <td>{{ p.auftrag.kostenstelle }}</td>
-        <td>{{ p.auftrag.mehraufwand }}</td>
-        <td>{{ p.auftrag.bemerkung }}</td>
-        <td>{{ p.angehoerige }}</td>
-        <td><a class="btn btn-sm btn-primary" href="#">Details</a></td>
+        <td>{{ p.geburtsdatum.strftime('%d.%m.%Y') if p.geburtsdatum else '—' }}</td>
+
+        <td>{{ addr(a.auftragsadresse) if a and a.auftragsadresse else '—' }}</td>
+        <td>{{ a.auftragsdatum.strftime('%d.%m.%Y') if a and a.auftragsdatum else '—' }}</td>
+
+        <td>{{ a.status.value if a and a.status else '—' }}</td>
+        <td>{{ a.kostenstelle.value if a and a.kostenstelle else '—' }}</td>
+
+        <td>
+          {% if p.angehoerige %}
+            {{ p.angehoerige | map(attribute='id') | list | join(', ') }}
+          {% else %}—
+          {% endif %}
+        </td>
+
+        <td>
+          {% if a and a.bestattungsinstitut %}
+            {{ a.bestattungsinstitut.kurzbezeichnung }}
+          {% else %}—
+          {% endif %}
+        </td>
+
+        <td>
+          {% if a and a.behoerden %}
+            {{ a.behoerden | map(attribute='name') | list | join(', ') }}
+          {% else %}—
+          {% endif %}
+        </td>
+
+        <td class="text-end">
+          <a href="{{ url_for('patient_detail', patient_id=p.id) }}"
+             class="btn btn-sm btn-primary">
+            Details
+          </a>
+        </td>
       </tr>
-    {% else %}
-      <tr><td colspan="6">Keine Patienten vorhanden.</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
+      {% endfor %}
+    </tbody>
+
+  </table>
+</div>
+
+<div class="mt-4">
+  <a href="{{ url_for('tb_new') }}"
+     class="btn btn-success btn-sm">Neue Todesbescheinigung</a>
+</div>
+
 {% endblock %}
