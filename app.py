@@ -7,7 +7,7 @@ from flask_wtf import CSRFProtect
 from forms import PatientForm, TBPatientForm
 import enum
 from sqlalchemy.inspection import inspect as sa_inspect
-from sqlalchemy import event, func
+from sqlalchemy import event, func, cast, Integer
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload, selectinload
@@ -58,7 +58,11 @@ def tb_new():
     form = TBPatientForm()
 
     # Adress-Choices (bestehende)
-    adressen = Adresse.query.order_by(Adresse.ort, Adresse.plz, Adresse.strasse, Adresse.hausnummer).all()
+    adressen = Adresse.query.order_by(
+        Adresse.strasse.asc(), 
+        Adresse.hausnummer.asc(), 
+        Adresse.ort.asc()
+    ).all()
     form.meldeadresse_id.choices = [(-1, "➕ Neue Adresse anlegen…")] + [(a.id, str(a)) for a in adressen]
     form.auftragsadresse_id.choices = [(-2, "🟰 Wie Meldeadresse"), (-1, "➕ Neue Adresse anlegen…")] + [(a.id, str(a)) for a in adressen]
 
