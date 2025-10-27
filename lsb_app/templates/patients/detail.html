@@ -1,4 +1,4 @@
-<!-- patient.detail.html -->
+<!-- lsb_app/templates/patients/detail.html -->
 {% extends "base.html" %}
 
 {% block title %}Patientendetails{% endblock %}
@@ -168,6 +168,6 @@
 </div>
 
 <div class="mt-4">
-  <a href="{{ url_for('patient_overview') }}" class="btn btn-outline-secondary btn-sm">Zur Übersicht</a>
+  <a href="{{ url_for('patients.overview') }}" class="btn btn-outline-secondary btn-sm">Zur Übersicht</a>
 </div>
 {% endblock %}

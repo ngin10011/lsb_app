@@ -1,4 +1,4 @@
-<!-- templates/tb_new.html -->
+<!-- lsb_app/templates/tb/new.html -->
 {% extends 'base.html' %}
 
 {% block title %}TB anlegen{% endblock %}
@@ -15,7 +15,7 @@
         <span class="badge text-bg-secondary">Entwurf</span>
       </div>
       <div class="d-flex gap-2">
-        <a href="{{ url_for('patient_overview') }}" class="btn btn-outline-secondary">Abbrechen</a>
+        <a href="{{ url_for('patients.overview') }}" class="btn btn-outline-secondary">Abbrechen</a>
         {{ form.submit(class="btn btn-primary px-4") }}
       </div>
     </div>
@@ -458,7 +458,7 @@
 
   <!-- Bottom Actions -->
   <div class="d-flex gap-2 justify-content-end mt-4">
-    <a href="{{ url_for('patient_overview') }}" class="btn btn-outline-secondary">Abbrechen</a>
+    <a href="{{ url_for('patients.overview') }}" class="btn btn-outline-secondary">Abbrechen</a>
     {{ form.submit(class="btn btn-primary px-4") }}
   </div>
 </form>

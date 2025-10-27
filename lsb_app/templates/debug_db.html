@@ -1,4 +1,4 @@
-{# templates/debug_db.html #}
+<!-- lsb_app/templates/debug_db.html -->
 {% extends 'base.html' %}
 
 {% block title %}DB-Übersicht{% endblock %}
@@ -28,7 +28,7 @@
             {% for obj in m.rows %}
               <tr>
                 {% for c in m.columns %}
-                  {% set val = getattr(obj, c) %}
+                  {% set val = obj|attr(c) %}
                   <td>{{ fmt(val) }}</td>
                 {% endfor %}
               </tr>

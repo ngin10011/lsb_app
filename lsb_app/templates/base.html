@@ -13,7 +13,7 @@
 
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
         <div class="container-fluid">
-        <a class="navbar-brand" href="{{ url_for('home') }}">LS Bayern</a>
+        <a class="navbar-brand" href="#">LS Bayern</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                 data-bs-target="#navbarContent" aria-controls="navbarContent"
                 aria-expanded="false" aria-label="Menü umschalten">
@@ -21,16 +21,16 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarContent">
             <div class="navbar-nav">
-                <a class="nav-link" href="{{ url_for('home') }}">Home</a>
-                <a class="nav-link" href="{{ url_for('tb_new') }}">TB anlegen</a>
+                <a class="nav-link" href="{{ url_for('home.index')}}">Home</a>
+                <a class="nav-link" href="{{ url_for('tb.new') }}">TB anlegen</a>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Patienten</a>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{{ url_for('patient_overview') }}">Übersicht</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('patient_new') }}">Patienten hinzufügen</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('patients.overview') }}">Übersicht</a></li>
+                        <li><a class="dropdown-item" href="#">Patienten hinzufügen</a></li>
                     </ul>
                 </li>
-                <a class="nav-link" href="{{ url_for('debug_db') }}">DB-Übersicht</a>
+                <a class="nav-link" href="{{ url_for('debug.db_overview') }}">DB-Übersicht</a>
             </div>
         </div>
         </div>

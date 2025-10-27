@@ -1,0 +1,96 @@
+<!-- lsb_app/templates/home.html -->
+{% extends "base.html" %}
+
+{% block title %}Startseite{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+
+  <h1 class="h4 mb-4">Willkommen in der Auftragsverwaltung</h1>
+
+  <div class="row g-3 mb-4">
+
+    <div class="col-sm-6 col-lg-3">
+      <a href="{{ url_for('tb.new') }}" class="text-decoration-none">
+        <div class="card shadow-sm h-100">
+          <div class="card-body text-center py-4">
+            <div class="fs-1">📝</div>
+            <div class="fw-semibold mt-2">Neue TB</div>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <a href="#" class="text-decoration-none">
+        <div class="card shadow-sm h-100">
+          <div class="card-body text-center py-4">
+            <div class="fs-1">📄</div>
+            <div class="fw-semibold mt-2">TB Übersicht</div>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <a href="{{ url_for('patients.overview') }}" class="text-decoration-none">
+        <div class="card shadow-sm h-100">
+          <div class="card-body text-center py-4">
+            <div class="fs-1">👤</div>
+            <div class="fw-semibold mt-2">Patienten</div>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    {% if config.DEBUG %}
+    <div class="col-sm-6 col-lg-3">
+      <a href="{{ url_for('debug.db_overview') }}" class="text-decoration-none">
+        <div class="card shadow-sm h-100 border-danger">
+          <div class="card-body text-center py-4">
+            <div class="fs-1">🛠</div>
+            <div class="fw-semibold mt-2 text-danger">Debug DB</div>
+          </div>
+        </div>
+      </a>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <hr class="my-4">
+
+  <h2 class="h6 mb-3">Letzte Aufträge</h2>
+  <table class="table table-sm align-middle">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Patient</th>
+        <th>Datum</th>
+        <th>Status</th>
+        <th class="text-end"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in recent_auftraege %}
+      <tr>
+        <td>{{ a.id }}</td>
+        <td>{{ a.patient.name }}, {{ a.patient.vorname }}</td>
+        <td>{{ a.auftragsdatum.strftime('%d.%m.%Y') if a.auftragsdatum else '—' }}</td>
+        <td>{{ a.status.value if a.status else '—' }}</td>
+        <td class="text-end">
+          <a class="btn btn-sm btn-outline-secondary"
+             href="{{ url_for('patients.detail', pid=a.patient.id) }}">
+            Details
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+      {% if not recent_auftraege %}
+      <tr><td colspan="5" class="text-center text-muted">Keine Daten vorhanden</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+</div>
+{% endblock %}

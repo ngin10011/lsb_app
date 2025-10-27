@@ -8,7 +8,7 @@ except ImportError:
     from wtforms.fields import EmailField
 from wtforms.validators import (DataRequired, Length, Optional, NumberRange, Email,
                                 ValidationError)
-from models import (GeschlechtEnum, KostenstelleEnum, AuftragsStatusEnum,
+from lsb_app.models import (GeschlechtEnum, KostenstelleEnum, AuftragsStatusEnum,
                     Auftrag)
 
 def strip_or_none(v):
@@ -152,7 +152,7 @@ class TBPatientForm(PatientForm):
     def validate_auftragsnummer(self, field):
         if field.data is None:
             return
-        from models import Auftrag  # Import hier, um Zyklus zu vermeiden
+        from lsb_app.models import Auftrag  # Import hier, um Zyklus zu vermeiden
         exists = Auftrag.query.filter_by(auftragsnummer=field.data).first()
         if exists:
             raise ValidationError("Auftragsnummer bereits vergeben.")
