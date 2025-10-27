@@ -22,7 +22,14 @@
   <div class="col-12 col-xl-6">
     <div class="card">
       <div class="card-body">
-        <h2 class="h6 mb-3">Patient</h2>
+
+        <h2 class="h6 mb-3 d-flex justify-content-between align-items-center">
+          <span>Patient</span>
+          <a class="btn btn-sm btn-outline-primary"
+            href="{{ url_for('patients.edit', pid=patient.id, next=request.full_path) }}">
+            Bearbeiten
+          </a>
+        </h2>
         <table class="table table-sm table-borderless align-middle mb-0">
           <tbody>
             <tr><th class="text-muted">Name</th><td>{{ patient.name }}</td></tr>
@@ -30,7 +37,18 @@
             <tr><th class="text-muted">Vorname</th><td>{{ patient.vorname }}</td></tr>
             <tr><th class="text-muted">Geburtsdatum</th><td>{{ patient.geburtsdatum }}</td></tr>
             <tr><th class="text-muted">Geschlecht</th><td>{{ show(patient.geschlecht) }}</td></tr>
-            <tr><th class="text-muted">Meldeadresse</th><td>{{ addr(patient.meldeadresse) }}</td></tr>
+            <tr>
+              <th class="text-muted">Meldeadresse</th>
+              <td>
+                {{ addr(patient.meldeadresse) }}
+                {% if patient.meldeadresse %}
+                  <a class="btn btn-xs btn-link"
+                    href="{{ url_for('addresses.edit', aid=patient.meldeadresse.id, next=request.full_path) }}">
+                    ändern
+                  </a>
+                {% endif %}
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>

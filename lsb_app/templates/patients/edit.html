@@ -1,0 +1,44 @@
+<!-- lsb_app/templates/patients/edit.html -->
+ {% extends "base.html" %}
+{% block title %}Patient bearbeiten{% endblock %}
+{% block body %}
+<h1 class="h5 mb-3">Patient bearbeiten
+  <small class="text-muted">(#{{ patient.id }})</small>
+</h1>
+
+<form method="post">
+  {{ form.csrf_token }}
+  <div class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label">{{ form.name.label }}</label>
+      {{ form.name(class="form-control") }}
+      {% for e in form.name.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">{{ form.vorname.label }}</label>
+      {{ form.vorname(class="form-control") }}
+      {% for e in form.vorname.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">{{ form.geburtsname.label }}</label>
+      {{ form.geburtsname(class="form-control") }}
+      {% for e in form.geburtsname.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">{{ form.geburtsdatum.label }}</label>
+      {{ form.geburtsdatum(class="form-control", type="date") }}
+      {% for e in form.geburtsdatum.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">{{ form.geschlecht.label }}</label>
+      {{ form.geschlecht(class="form-select") }}
+      {% for e in form.geschlecht.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+    </div>
+  </div>
+
+  <div class="mt-4">
+    <a href="{{ url_for('patients.detail', pid=patient.id) }}" class="btn btn-outline-secondary">Abbrechen</a>
+    {{ form.submit(class="btn btn-primary") }}
+  </div>
+</form>
+{% endblock %}
