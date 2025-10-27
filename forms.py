@@ -118,11 +118,14 @@ class TBPatientForm(PatientForm):
             sub.form.geschlecht.choices = [("", "— bitte wählen —")] + [(g.value, g.value) for g in GeschlechtEnum]
             # -2: wie Melde, -4: wie Auftrag, -1: Neu, -3: Unbekannt
             sub.form.adresse_choice.choices = [
+                (0,  "— bitte wählen —"),
                 (-2, "🟰 Wie Meldeadresse"),
                 (-4, "🟰 Wie Auftragsadresse"),
                 (-1, "➕ Neue Adresse anlegen…"),
                 (-3, "Unbekannt"),
             ]
+            if sub.form.adresse_choice.data is None:
+                sub.form.adresse_choice.data = 0
 
     bestattungsinstitut_id = SelectField(
         "Bestattungsinstitut",

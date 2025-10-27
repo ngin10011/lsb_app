@@ -87,6 +87,7 @@ def tb_new():
         new = form.angehoerige[-1].form
         new.geschlecht.choices = [("", "— bitte wählen —")] + [(g.value, g.value) for g in GeschlechtEnum]
         new.adresse_choice.choices = [
+            (0,  "— bitte wählen —"),
             (-2, "🟰 Wie Meldeadresse"),
             (-4, "🟰 Wie Auftragsadresse"),
             (-1, "➕ Neue Adresse anlegen…"),

@@ -250,30 +250,36 @@
 
               <hr class="my-3">
 
+              {# Adresse-Auswahl je Angehöriger #}
               <div class="mb-2">
                 {{ sub.form.adresse_choice.label(class="form-label") }}
-                {{ sub.form.adresse_choice(class="form-select", id="sel-ang-addr-{{ loop.index0 }}") }}
+                {{ sub.form.adresse_choice(
+                    class="form-select js-ang-addr-select",
+                    id="sel-ang-addr-{{ loop.index0 }}",
+                    **{"data-idx": loop.index0}
+                ) }}
               </div>
 
+              {# Eingabefelder für "Neue Adresse anlegen…" #}
               <div id="box-ang-addr-{{ loop.index0 }}" class="border rounded p-3" style="display:none;">
                 <div class="row g-2">
                   <div class="col-md-9">
                     {{ sub.form.strasse.label(class="form-label") }}
-                    {{ sub.form.strasse(class="form-control") }}
+                    {{ sub.form.strasse(class="form-control", id="ang-strasse-{{ loop.index0 }}") }}
                   </div>
                   <div class="col-md-3">
                     {{ sub.form.hausnummer.label(class="form-label") }}
-                    {{ sub.form.hausnummer(class="form-control") }}
+                    {{ sub.form.hausnummer(class="form-control", id="ang-hausnummer-{{ loop.index0 }}") }}
                   </div>
                 </div>
                 <div class="row g-2 mt-2">
                   <div class="col-md-4">
                     {{ sub.form.plz.label(class="form-label") }}
-                    {{ sub.form.plz(class="form-control") }}
+                    {{ sub.form.plz(class="form-control", id="ang-plz-{{ loop.index0 }}") }}
                   </div>
                   <div class="col-md-8">
                     {{ sub.form.ort.label(class="form-label") }}
-                    {{ sub.form.ort(class="form-control") }}
+                    {{ sub.form.ort(class="form-control", id="ang-ort-{{ loop.index0 }}") }}
                   </div>
                 </div>
                 <div class="form-text mt-2">Nur ausfüllen, wenn „Neue Adresse anlegen…“ gewählt wurde.</div>
@@ -479,20 +485,42 @@ document.addEventListener('DOMContentLoaded', function () {
   })();
 
 
-document.addEventListener('DOMContentLoaded', function () {
-  // Toggle für alle Angehörigen-Adress-Blöcke
-  document.querySelectorAll('[id^="sel-ang-addr-"]').forEach(function(sel) {
-    const idx = sel.id.replace('sel-ang-addr-','');
+  // ===== Angehörige –
+  document.querySelectorAll('.js-ang-addr-select').forEach(function(sel){
+    const idx = sel.dataset.idx;                           // vom Template übergeben
     const box = document.getElementById('box-ang-addr-' + idx);
-    function toggle() {
-      const v = parseInt(sel.value, 10);
-      box.style.display = (v === -1) ? 'block' : 'none'; // -1 = Neu
-    }
-    sel.addEventListener('change', toggle);
-    toggle();
-  });
-});
 
+    // Optional: die vier Eingabefelder referenzieren (für required/clear)
+    const fStr = document.getElementById('ang-strasse-' + idx);
+    const fNr  = document.getElementById('ang-hausnummer-' + idx);
+    const fPlz = document.getElementById('ang-plz-' + idx);
+    const fOrt = document.getElementById('ang-ort-' + idx);
+    const addrInputs = [fStr, fNr, fPlz, fOrt].filter(Boolean);
+
+    function setRequired(on){
+      addrInputs.forEach(inp => { if (inp) inp.required = !!on; });
+    }
+    function clearInputs(){
+      addrInputs.forEach(inp => { if (inp) inp.value = ''; });
+    }
+
+    function toggle(){
+      // Select-Wert ist im DOM immer String
+      const v = parseInt(sel.value, 10);  // -2 = wie Melde, -4 = wie Auftrag, -1 = neu, -3 = unbekannt
+      if (v === -1){
+        show(box);
+        setRequired(true);                // UX: Felder sichtbar -> als Pflicht markieren
+      } else {
+        hide(box);
+        setRequired(false);
+        // Optional: aufräumen, damit keine "Geisterwerte" hängenbleiben
+        clearInputs();
+      }
+    }
+
+    sel.addEventListener('change', toggle);
+    toggle();  // Initialzustand beim Laden (wichtig für Server-Fehler/Prefills)
+  });
 
 
 
