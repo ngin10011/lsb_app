@@ -11,7 +11,8 @@ from sqlalchemy import event, func, cast, Integer
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload, selectinload
-from lsb_app.models import (db, Patient, GeschlechtEnum, Adresse, 
+from lsb_app.extensions import db
+from lsb_app.models import (Patient, GeschlechtEnum, Adresse, 
                     Auftrag, KostenstelleEnum, Angehoeriger,
                     Bestattungsinstitut, Behoerde,
                     AuftragsStatusEnum)
