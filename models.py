@@ -2,8 +2,9 @@
 from flask_sqlalchemy import SQLAlchemy
 from enum import Enum
 from sqlalchemy import Enum as SqlEnum
+from lsb_app.extensions import db
 
-db = SQLAlchemy()
+# db = SQLAlchemy()
 
 class GeschlechtEnum(str, Enum):
     MAENNLICH = "männlich"
