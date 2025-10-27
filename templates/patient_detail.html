@@ -1,3 +1,4 @@
+<!-- patient.detail.html -->
 {% extends "base.html" %}
 
 {% block title %}Patientendetails{% endblock %}
@@ -61,6 +62,47 @@
     </div>
   </div>
 
+  <!-- Angehörige (1:n) -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Angehörige</h2>
+        {% if patient.angehoerige %}
+          <div class="table-responsive">
+            <table class="table table-sm table-striped align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Name</th>
+                  <th>Vorname</th>
+                  <th>Geschlecht</th>
+                  <th>Verwandtschaft</th>
+                  <th>Telefon</th>
+                  <th>E-Mail</th>
+                  <th>Adresse</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for ang in patient.angehoerige %}
+                <tr>
+                  <td>{{ ang.name }}</td>
+                  <td>{{ ang.vorname }}</td>
+                  <td>{{ show(ang.geschlecht) }}</td>
+                  <td>{{ show(ang.verwandtschaftsgrad) }}</td>
+                  <td>{{ show(ang.telefonnummer) }}</td>
+                  <td>{{ show(ang.email) }}</td>
+                  <td>{{ addr(ang.adresse) }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="text-muted">Keine Angehörigen erfasst.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
   <!-- Bestattungsinstitut -->
   <div class="col-12">
     <div class="card">
@@ -75,6 +117,10 @@
               <tr><th class="text-muted">E-Mail</th><td>{{ show(bi.email) }}</td></tr>
               <tr><th class="text-muted">Bemerkung</th><td>{{ show(bi.bemerkung) }}</td></tr>
               <tr><th class="text-muted">Adresse</th><td>{{ addr(bi.adresse) }}</td></tr>
+              <tr>
+                <th class="text-muted">Anschreibbar</th>
+                <td>{{ 'Ja' if bi.anschreibbar else 'Nein' }}</td>
+            </tr>
             </tbody>
           </table>
         {% else %}
@@ -119,46 +165,6 @@
     </div>
   </div>
 
-  <!-- Angehörige (1:n) -->
-  <div class="col-12">
-    <div class="card">
-      <div class="card-body">
-        <h2 class="h6 mb-3">Angehörige</h2>
-        {% if patient.angehoerige %}
-          <div class="table-responsive">
-            <table class="table table-sm table-striped align-middle">
-              <thead class="table-light">
-                <tr>
-                  <th>Name</th>
-                  <th>Vorname</th>
-                  <th>Geschlecht</th>
-                  <th>Verwandtschaft</th>
-                  <th>Telefon</th>
-                  <th>E-Mail</th>
-                  <th>Adresse</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for ang in patient.angehoerige %}
-                <tr>
-                  <td>{{ ang.name }}</td>
-                  <td>{{ ang.vorname }}</td>
-                  <td>{{ show(ang.geschlecht) }}</td>
-                  <td>{{ show(ang.verwandtschaftsgrad) }}</td>
-                  <td>{{ show(ang.telefonnummer) }}</td>
-                  <td>{{ show(ang.email) }}</td>
-                  <td>{{ addr(ang.adresse) }}</td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        {% else %}
-          <div class="text-muted">Keine Angehörigen erfasst.</div>
-        {% endif %}
-      </div>
-    </div>
-  </div>
 </div>
 
 <div class="mt-4">
