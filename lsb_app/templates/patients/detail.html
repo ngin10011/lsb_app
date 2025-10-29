@@ -59,7 +59,15 @@
   <div class="col-12 col-xl-6">
     <div class="card">
       <div class="card-body">
-        <h2 class="h6 mb-3">Auftrag</h2>
+        <h2 class="h6 mb-3 d-flex justify-content-between align-items-center">
+          <span>Auftrag</span>
+          {% if patient.auftrag %}
+            <a class="btn btn-sm btn-outline-primary"
+              href="{{ url_for('auftraege.edit', aid=patient.auftrag.id, next=request.full_path) }}">
+              Bearbeiten
+            </a>
+          {% endif %}
+        </h2>
         {% if patient.auftrag %}
           <table class="table table-sm table-borderless align-middle mb-0">
             <tbody>
@@ -70,7 +78,18 @@
               <tr><th class="text-muted">Status</th><td>{{ show(patient.auftrag.status) }}</td></tr>
               <tr><th class="text-muted">Mehraufwand</th><td>{{ 'Ja' if patient.auftrag.mehraufwand else 'Nein' }}</td></tr>
               <tr><th class="text-muted">Bemerkung</th><td>{{ show(patient.auftrag.bemerkung) }}</td></tr>
-              <tr><th class="text-muted">Auftragsadresse</th><td>{{ addr(patient.auftrag.auftragsadresse) }}</td></tr>
+              <tr>
+                <th class="text-muted">Auftragsadresse</th>
+                <td>
+                  {{ addr(patient.auftrag.auftragsadresse) }}
+                  {% if patient.auftrag and patient.auftrag.auftragsadresse %}
+                    <a class="btn btn-xs btn-link"
+                      href="{{ url_for('addresses.edit', aid=patient.auftrag.auftragsadresse.id, next=request.full_path) }}">
+                      ändern
+                    </a>
+                  {% endif %}
+                </td>
+              </tr>
             </tbody>
           </table>
         {% else %}
