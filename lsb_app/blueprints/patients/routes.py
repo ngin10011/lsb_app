@@ -1,40 +1,89 @@
 # lsb_app/blueprints/patients/routes.py
 from flask import render_template, request, redirect, url_for, flash, abort
-from sqlalchemy import asc, desc
+from sqlalchemy import case, asc, desc
 from sqlalchemy.orm import selectinload
 from lsb_app.blueprints.patients import bp
 from lsb_app.extensions import db
-from lsb_app.models import Patient
+from lsb_app.models import Patient, Auftrag, AuftragsStatusEnum
 from lsb_app.forms import PatientForm
 
 @bp.route("/", methods=["GET"])
 def overview():
-    # einfache serverseitige Suche/Sortierung/Pagination
-    q = request.args.get("q", "", type=str).strip()
-    sort = request.args.get("sort", "name")
-    order = request.args.get("order", "asc")
-    page = request.args.get("page", 1, type=int)
-    per_page = 20
+    # Query-Parameter
+    status_param = request.args.get("status", "").strip()         # z. B. READY
+    sort_param   = request.args.get("sort", "auftragsnummer").strip()  # auftragsnummer | name | status
+    dir_param    = request.args.get("dir", "desc").strip()         # asc | desc
 
-    query = Patient.query
-    if q:
-        like = f"%{q}%"
-        query = query.filter(
-            (Patient.name.ilike(like)) | (Patient.vorname.ilike(like))
+    # Basismenge mit Join u. Eager Loading
+    q = (
+        db.session.query(Patient)
+        .outerjoin(Auftrag, Patient.id == Auftrag.patient_id)
+        .options(
+            selectinload(Patient.meldeadresse),
+            selectinload(Patient.auftrag).selectinload(Auftrag.auftragsadresse),
+            selectinload(Patient.auftrag).selectinload(Auftrag.bestattungsinstitut),
+            selectinload(Patient.auftrag).selectinload(Auftrag.behoerden),
+            selectinload(Patient.angehoerige),
         )
+    )
 
-    sort_col = getattr(Patient, sort, Patient.name)
-    query = query.order_by(asc(sort_col) if order == "asc" else desc(sort_col))
+    # Status-Filter
+    if status_param:
+        try:
+            q = q.filter(Auftrag.status == AuftragsStatusEnum(status_param))
+        except Exception:
+            # Ungültiger Wert: kein Filter anwenden
+            pass
 
-    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    # Sortierrichtung validieren
+    dir_param = dir_param if dir_param in {"asc", "desc"} else "asc"
+    order = []
+
+    # Hilfs-Ausdruck: NULLS LAST für Felder aus Auftrag
+    nulls_last_num = case((Auftrag.auftragsnummer.is_(None), 1), else_=0)
+    nulls_last_dat = case((Auftrag.auftragsdatum.is_(None), 1), else_=0)
+
+    if sort_param == "name":
+        # Name, sekundär Auftragsnummer (NULLS LAST)
+        order.append(asc(Patient.name) if dir_param == "asc" else desc(Patient.name))
+        order.append(asc(nulls_last_num))
+        order.append(asc(Auftrag.auftragsnummer))
+    elif sort_param == "status":
+        # Status definierte Ordnung, sekundär Auftragsnummer (NULLS LAST)
+        status_order = [
+            AuftragsStatusEnum.TODO,
+            AuftragsStatusEnum.WAIT,
+            AuftragsStatusEnum.READY,
+            AuftragsStatusEnum.SENT,
+            AuftragsStatusEnum.DONE,
+        ]
+        status_case = case({s: i for i, s in enumerate(status_order)},
+                           value=Auftrag.status, else_=999)
+        order.append(asc(status_case) if dir_param == "asc" else desc(status_case))
+        order.append(asc(nulls_last_num))
+        order.append(asc(Auftrag.auftragsnummer))
+    else:
+        # Standard: Auftragsnummer (NULLS LAST)
+        order.append(asc(nulls_last_num))
+        primary = asc(Auftrag.auftragsnummer) if dir_param == "asc" else desc(Auftrag.auftragsnummer)
+        order.append(primary)
+        # Sekundär stabilisieren: Name
+        order.append(asc(Patient.name))
+
+    for oe in order:
+        q = q.order_by(oe)
+
+    patients = q.all()
+
+    status_choices = [("", "— alle —")] + [(s.value, s.value) for s in AuftragsStatusEnum]
 
     return render_template(
         "patients/overview.html",
-        pagination=pagination,
-        patients=pagination.items,
-        q=q,
-        sort=sort,
-        order=order,
+        patients=patients,
+        status_choices=status_choices,
+        selected_status=status_param,
+        sort=sort_param,
+        dir=dir_param,
     )
 
 @bp.route("/<int:pid>", methods=["GET", "POST"])

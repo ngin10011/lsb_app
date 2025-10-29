@@ -10,17 +10,73 @@
   {%- if a -%}{{ a.strasse }} {{ a.hausnummer }}, {{ a.plz }} {{ a.ort }}{%- else -%}—{%- endif -%}
 {%- endmacro %}
 
+<form method="get" class="row g-2 align-items-end mb-3">
+  <div class="col-auto">
+    <label class="form-label mb-1">Status</label>
+    <select name="status" class="form-select form-select-sm">
+      {% for val,label in status_choices %}
+        <option value="{{ val }}" {{ 'selected' if val == selected_status else '' }}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="col-auto">
+    <label class="form-label mb-1">Sortieren nach</label>
+    <select name="sort" class="form-select form-select-sm">
+      <option value="auftragsnummer" {{ 'selected' if sort=='auftragsnummer' else '' }}>Auftragsnummer</option>
+      <option value="name" {{ 'selected' if sort=='name' else '' }}>Nachname</option>
+      <option value="status" {{ 'selected' if sort=='status' else '' }}>Status</option>
+    </select>
+  </div>
+
+  <div class="col-auto">
+    <label class="form-label mb-1">Richtung</label>
+    <select name="dir" class="form-select form-select-sm">
+      <option value="asc"  {{ 'selected' if dir=='asc' else '' }}>aufsteigend</option>
+      <option value="desc" {{ 'selected' if dir=='desc' else '' }}>absteigend</option>
+    </select>
+  </div>
+
+  <div class="col-auto">
+    <button type="submit" class="btn btn-sm btn-primary">Anwenden</button>
+    <a href="{{ url_for('patients.overview') }}" class="btn btn-sm btn-outline-secondary">Zurücksetzen</a>
+  </div>
+</form>
+
+
 <div class="table-responsive">
   <table class="table table-sm table-striped align-middle">
+    {% set next_dir = 'desc' if dir=='asc' else 'asc' %}
     <thead class="table-light">
       <tr>
-        <th>Auftrag#</th>
-        <th>Name</th>
+        <th>
+          <a href="{{ url_for('patients.overview',
+                              status=selected_status,
+                              sort='auftragsnummer',
+                              dir=(next_dir if sort=='auftragsnummer' else 'asc')) }}">
+            Auftrag#
+          </a>
+        </th>
+        <th>
+          <a href="{{ url_for('patients.overview',
+                              status=selected_status,
+                              sort='name',
+                              dir=(next_dir if sort=='name' else 'asc')) }}">
+            Name
+          </a>
+        </th>
         <th>Vorname</th>
         <th>Geburtsdatum</th>
         <th>Auftragsadresse</th>
         <th>Auftragsdatum</th>
-        <th>Status</th>
+        <th>
+          <a href="{{ url_for('patients.overview',
+                              status=selected_status,
+                              sort='status',
+                              dir=(next_dir if sort=='status' else 'asc')) }}">
+            Status
+          </a>
+        </th>
         <th>Kostenstelle</th>
         <th>Angehörige</th>
         <th>Bestattungsinstitut</th>
@@ -33,7 +89,7 @@
       {% for p in patients %}
       {% set a = p.auftrag %}
       <tr>
-        <td>{{ a.auftragsnummer }}</td>
+        <td>{{ a.auftragsnummer if a and a.auftragsnummer is not none else '—' }}</td>
 
         <td>{{ p.name }}</td>
         <td>{{ p.vorname }}</td>
