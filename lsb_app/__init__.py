@@ -64,8 +64,8 @@ def create_app():
     from lsb_app.blueprints.behoerden import bp as behoerden_bp
     app.register_blueprint(behoerden_bp, url_prefix="/behoerden")
 
-    from lsb_app.blueprints.invoices import bp as invoices_bp
-    app.register_blueprint(invoices_bp, url_prefix="/invoices")
+    from lsb_app.blueprints.rechnungen import bp as rechnungen_bp
+    app.register_blueprint(rechnungen_bp, url_prefix="/rechnungen")
 
 
 
