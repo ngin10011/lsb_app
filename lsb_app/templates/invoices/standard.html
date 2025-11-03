@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Rechnung</title>
+    <style>
+        @page {
+            margin-top: 1.5cm;
+            margin-bottom: 3cm;
+            margin-left: 2.5cm;
+            margin-right: 2cm;
+
+            @bottom-center {
+                content: element(seitenfooter);
+            }
+        }
+        body {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-size: 11pt;
+            color: #000;
+            margin: 0;
+        }
+        header {
+            /* padding: 2cm 1.5cm 0 1.5cm; */
+            text-align: center;
+        }
+        .logo {
+            font-size: 16pt;
+            font-weight: bold;
+        }
+        .anschrift-kopfzeile {
+            font-size: 8pt;
+            text-decoration: underline;
+            margin-bottom: 0.3cm;
+        }
+        .anschrift-block {
+            position: absolute;
+            top: 3cm; /* inkl. 1.5cm margin-top somit 4.5cm */
+            left: 0cm; /* inkl. 2.5cm margin-left somit 2.5cm */
+            width: 9cm;
+            height: 4cm;
+            line-height: 1.3em;
+        }
+        .bankdaten-block {
+            position: absolute;
+            top: 5.5cm;
+            right: 0cm;
+            width: 8cm;
+            line-height: 1.3em;
+            font-size: 10pt;
+            text-align: left;
+        }
+        .content {
+            margin-top: 6cm;
+            padding-right: 0.5cm;
+            /* padding: 0 1.5cm 2cm 1.5cm; */
+        }
+        .title {
+            text-align: center;
+            font-size: 18pt;
+            font-weight: bold;
+            margin-bottom: 1cm;
+        }
+        .meta {
+            margin-top: 1cm;
+        }
+        .footer {
+            margin-bottom: 0cm;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1cm;
+            page-break-inside: avoid;
+        }
+        th, td {
+            border-bottom: 1px solid #ccc;
+            padding: 4px;
+        }
+        th {
+            background-color: #f0f0f0;
+            text-align: left;
+        }
+        .right {
+            text-align: right;
+        }
+        .total {
+            font-weight: bold;
+            border-top: 2px solid #000;
+        }
+        .seitenfooter {
+            position: running(seitenfooter);
+            font-size: 12pt;
+            text-align: center;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">{{ config.COMPANY_NAME }}</div>
+        <div>{{ config.COMPANY_ROLE }}<br>{{ config.COMPANY_ADDRESS }}<br>Tel: {{ config.COMPANY_PHONE }} - {{ config.COMPANY_EMAIL }}</div>
+    </header>
+
+    <div class="anschrift-block">
+        <div class="anschrift-kopfzeile">
+            {{ config.COMPANY_NAME }} - {{ config.COMPANY_ADDRESS }}
+        </div>
+        {{ anschrift|safe }}
+    </div>
+
+    <div class="bankdaten-block">
+        <p><strong>Bankverbindung:</strong><br>
+        IBAN: {{ config.BANK_IBAN }}<br>
+        BIC: {{ config.BANK_BIC }}<br>
+        Verwendungszweck: Rechnung LS-{{ rechnungsnummer }}</p>
+    </div>
+
+    <div class="content">
+        <div class="title">RECHNUNG</div>
+
+        <section class="meta">
+            <p><strong>Rechnungsnummer:</strong> LS-{{ '{:04d}'.format(rechnungsnummer) }}<br>
+            <strong>Rechnungsdatum:</strong> {{ rechnungsdatum }}<br>
+            <strong>Leichenschau am:</strong> {{ auftragsdatum }}<br><br>
+            <strong>{{ gender_wort }}:</strong> {{ nachname }}, {{ vorname }} (*{{ geburtsdatum }})</p>
+        </section>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Leistung</th>
+                    <th>Beschreibung</th>
+                    <th class="right">Betrag (€)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for eintrag in leistungen %}
+                <tr>
+                    <td>{{ eintrag.kurz }}</td>
+                    <td>{{ eintrag.beschreibung }}</td>
+                    <td class="right">{{ eintrag.betrag }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="2" class="right">Summe</td>
+                    <td class="right total">{{ summe }}</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <section class="footer">
+            <p>Gemäß § 12, 1 GOÄ ist die Rechnung sofort fällig. Spätestens 30 Tage nach Zugang tritt gemäß § 286 III BGB Verzug ein.</p>
+        </section>
+    </div>
+
+    <section class="seitenfooter">
+        <p>Steuernummer: {{ config.TAX_NUMBER }}</p>
+    </section>
+
+</body>
+</html>

@@ -10,13 +10,27 @@ def create_app():
     app = Flask(__name__, instance_relative_config=True)
     os.makedirs(app.instance_path, exist_ok=True)
 
-    # Konfiguration
+    # Basis-Konfiguration
     app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY", "dev-key")
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
         "DATABASE_URL",
         "sqlite:///" + os.path.join(app.instance_path, "site.db")
     )
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+    # Sensitive Business-Daten
+    app.config["COMPANY_NAME"] = os.getenv("COMPANY_NAME", "NAME_NICHT_GESETZT")
+    app.config["COMPANY_ADDRESS"] = os.getenv("COMPANY_ADDRESS", "")
+    app.config["COMPANY_PHONE"] = os.getenv("COMPANY_PHONE", "")
+    app.config["COMPANY_EMAIL"] = os.getenv("COMPANY_EMAIL", "")
+    app.config["BANK_IBAN"] = os.getenv("BANK_IBAN", "")
+    app.config["BANK_BIC"] = os.getenv("BANK_BIC", "")
+    app.config["TAX_NUMBER"] = os.getenv("TAX_NUMBER", "")
+
+    # Für Jinja verfügbar machen: {{ config.BANK_IBAN }} usw.
+    @app.context_processor
+    def inject_config():
+        return dict(config=app.config)
 
     # Extensions
     db.init_app(app)
@@ -49,6 +63,9 @@ def create_app():
 
     from lsb_app.blueprints.behoerden import bp as behoerden_bp
     app.register_blueprint(behoerden_bp, url_prefix="/behoerden")
+
+    from lsb_app.blueprints.invoices import bp as invoices_bp
+    app.register_blueprint(invoices_bp, url_prefix="/invoices")
 
 
 
