@@ -1,7 +1,7 @@
 # lsb_app/forms/auftrag.py
 from flask_wtf import FlaskForm
 from wtforms import IntegerField, DateField, TimeField, SelectField, BooleanField, TextAreaField, SubmitField
-from wtforms.validators import Optional, NumberRange, Length
+from wtforms.validators import Optional, NumberRange, Length, DataRequired
 from lsb_app.models import KostenstelleEnum, AuftragsStatusEnum
 
 def coerce_enum(enum_cls):
@@ -21,6 +21,8 @@ class AuftragForm(FlaskForm):
     status          = SelectField("Status", validators=[Optional()], coerce=coerce_enum(AuftragsStatusEnum))
     mehraufwand     = BooleanField("Mehraufwand", default=False)
     bemerkung       = TextAreaField("Bemerkung", validators=[Optional(), Length(max=2000)])
+    auftragsadresse_id = SelectField("Adresse", coerce=int,
+                            validators=[DataRequired(message="Bitte eine Adresse auswählen.")])
     submit          = SubmitField("Speichern")
 
     def __init__(self, *args, **kwargs):

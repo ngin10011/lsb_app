@@ -49,6 +49,20 @@
     </div>
   </div>
 
+    <div class="col-md-6">
+      {{ form.auftragsadresse_id.label(class="form-label") }}
+      <div class="d-flex gap-2">
+        {{ form.auftragsadresse_id(class="form-select") }}
+        {% if auftrag.auftragsadresse %}
+          <a class="btn btn-outline-secondary"
+             href="{{ url_for('addresses.edit', aid=auftrag.auftragsadresse.id, next=request.full_path) }}">
+            Adresse ändern
+          </a>
+        {% endif %}
+      </div>
+      {% for e in form.auftragsadresse_id.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+    </div>
+
   <div class="mt-4 d-flex gap-2">
     <a href="{{ request.args.get('next') or url_for('patients.detail', pid=auftrag.patient_id) }}" class="btn btn-outline-secondary">
       Abbrechen

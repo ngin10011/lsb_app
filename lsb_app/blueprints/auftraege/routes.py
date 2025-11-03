@@ -4,6 +4,7 @@ from lsb_app.blueprints.auftraege import bp
 from lsb_app.extensions import db
 from lsb_app.models import Auftrag
 from lsb_app.forms import AuftragForm
+from lsb_app.models.adresse import Adresse
 
 @bp.route("/<int:aid>/edit", methods=["GET", "POST"], endpoint="edit")
 def edit(aid: int):
@@ -13,6 +14,15 @@ def edit(aid: int):
 
     form = AuftragForm(obj=auftrag)
 
+    # # Adressauswahl
+    adressen = Adresse.query.order_by(
+        Adresse.strasse.asc(), Adresse.hausnummer.asc(), Adresse.ort.asc()
+    ).all()
+    form.auftragsadresse_id.choices = [(a.id, str(a)) for a in adressen]
+
+    if request.method == "GET":
+        form.auftragsadresse_id.data = auftrag.auftragsadresse_id
+
     if form.validate_on_submit():
         auftrag.auftragsnummer  = form.auftragsnummer.data
         auftrag.auftragsdatum   = form.auftragsdatum.data
@@ -21,6 +31,8 @@ def edit(aid: int):
         auftrag.status          = form.status.data
         auftrag.mehraufwand     = bool(form.mehraufwand.data)
         auftrag.bemerkung       = form.bemerkung.data
+
+        auftrag.auftragsadresse = db.session.get(Adresse, form.auftragsadresse_id.data)
 
         try:
             db.session.commit()

@@ -76,12 +76,6 @@
                 <th class="text-muted">Auftragsadresse</th>
                 <td>
                   {{ addr(patient.auftrag.auftragsadresse) }}
-                  {% if patient.auftrag and patient.auftrag.auftragsadresse %}
-                    <a class="btn btn-xs btn-link"
-                      href="{{ url_for('addresses.edit', aid=patient.auftrag.auftragsadresse.id, next=request.full_path) }}">
-                      ändern
-                    </a>
-                  {% endif %}
                 </td>
               </tr>
             </tbody>

@@ -33,6 +33,13 @@
       {% for e in form.bemerkung.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
     </div>
 
+    <div class="col-md-6 d-flex align-items-end">
+      <div class="form-check mt-2">
+        {{ form.anschreibbar(class="form-check-input", id="anschreibbarCheck") }}
+        <label class="form-check-label" for="anschreibbarCheck">Anschreibbar</label>
+      </div>
+    </div>
+
     <div class="col-md-6">
       {{ form.adresse_id.label(class="form-label") }}
       <div class="d-flex gap-2">
@@ -45,15 +52,8 @@
         {% endif %}
       </div>
       {% for e in form.adresse_id.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
-      <div class="form-text">Optional: bestehende Adresse verknüpfen oder leer lassen.</div>
     </div>
 
-    <div class="col-md-6 d-flex align-items-end">
-      <div class="form-check mt-2">
-        {{ form.anschreibbar(class="form-check-input", id="anschreibbarCheck") }}
-        <label class="form-check-label" for="anschreibbarCheck">Anschreibbar</label>
-      </div>
-    </div>
   </div>
 
   <div class="mt-4 d-flex gap-2">
