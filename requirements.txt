@@ -6,3 +6,4 @@ python-dotenv>=1.0,<2.0
 Faker>=25.0.0
 email-validator
 weasyprint
+flask_migrate

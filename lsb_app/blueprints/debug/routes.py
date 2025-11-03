@@ -8,9 +8,11 @@ from lsb_app.extensions import db
 # Passen Sie die Liste bei Bedarf an.
 try:
     from lsb_app.models import (
-        Patient, Adresse, Auftrag, Bestattungsinstitut, Behoerde, Angehoeriger
+        Patient, Adresse, Auftrag, Bestattungsinstitut, Behoerde, Angehoeriger,
+        Rechnung
     )
-    MODEL_REGISTRY = [Patient, Adresse, Auftrag, Bestattungsinstitut, Behoerde, Angehoeriger]
+    MODEL_REGISTRY = [Patient, Adresse, Auftrag, Bestattungsinstitut, Behoerde, 
+                      Angehoeriger, Rechnung]
 except Exception:
     # Fallback, wenn noch nicht alles existiert
     from lsb_app import models as _models

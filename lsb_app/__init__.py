@@ -1,8 +1,11 @@
 # lsb_app/__init__.py
 import os
 from flask import Flask
+from flask_migrate import Migrate
 from dotenv import load_dotenv
 from lsb_app.extensions import db, csrf
+
+migrate = Migrate(compare_type=True, render_as_batch=True)
 
 def create_app():
     load_dotenv()
@@ -35,6 +38,7 @@ def create_app():
     # Extensions
     db.init_app(app)
     csrf.init_app(app)
+    migrate.init_app(app, db)
 
     # Blueprints registrieren
     from lsb_app.blueprints.patients import bp as patients_bp
@@ -67,14 +71,5 @@ def create_app():
     from lsb_app.blueprints.rechnungen import bp as rechnungen_bp
     app.register_blueprint(rechnungen_bp, url_prefix="/rechnungen")
 
-
-
-
-
-    @app.cli.command("init-db")
-    def init_db_command():
-        from lsb_app import models  # Models registrieren
-        db.create_all()
-        print("Datenbank initialisiert.")
 
     return app

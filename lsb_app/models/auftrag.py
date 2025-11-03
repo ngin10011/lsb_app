@@ -48,5 +48,14 @@ class Auftrag(IDMixin, TimestampMixin, db.Model):
         cascade="save-update",
     )
 
+    # 1:n
+    rechnungen = db.relationship(
+        "Rechnung",
+        back_populates="auftrag",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        lazy="selectin",
+    )
+
     def __repr__(self):
         return f"<Auftrag #{self.id} Patient={self.patient_id}>"

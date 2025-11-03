@@ -7,9 +7,11 @@ from .institut import Bestattungsinstitut
 from .behoerde import Behoerde
 from .auftrag import Auftrag
 from .angehoeriger import Angehoeriger
+from .rechnung import Rechnung
 
 __all__ = [
     "GeschlechtEnum", "KostenstelleEnum", "AuftragsStatusEnum",
     "auftrag_behoerde",
     "Patient", "Adresse", "Bestattungsinstitut", "Behoerde", "Auftrag", "Angehoeriger",
+    "Rechnung"
 ]

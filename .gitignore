@@ -18,6 +18,15 @@ venv/
 *.sqlite
 *.sqlite3
 
+# --- Flask-Migrate / Alembic ---
+migrations/__pycache__/
+migrations/*.pyc
+# Behalte die Versionsdateien (Schema-Historie)
+!migrations/versions/
+!migrations/env.py
+!migrations/script.py.mako
+!migrations/README*
+
 # --- Logs / temporäre Dateien ---
 *.log
 *.tmp
