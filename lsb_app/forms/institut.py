@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField, BooleanField, SubmitField, SelectField
-from wtforms.validators import DataRequired, Length, Optional, Email
+from wtforms.validators import DataRequired, Length, Optional, Email, InputRequired
 
 def strip_or_none(v):
     return v.strip() if isinstance(v, str) and v.strip() != "" else None
@@ -27,5 +27,6 @@ class InstitutForm(FlaskForm):
         filters=[strip_or_none],
     )
     anschreibbar = BooleanField("Anschreibbar")
-    adresse_id = SelectField("Adresse", coerce=int)
+    adresse_id = SelectField("Adresse", coerce=int, 
+                             validators=[InputRequired(message="Bitte eine Adresse auswählen.")])
     submit = SubmitField("Speichern")

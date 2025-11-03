@@ -116,6 +116,7 @@
                   <th>Telefon</th>
                   <th>E-Mail</th>
                   <th>Adresse</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -128,6 +129,12 @@
                   <td>{{ show(ang.telefonnummer) }}</td>
                   <td>{{ show(ang.email) }}</td>
                   <td>{{ addr(ang.adresse) }}</td>
+                  <td>          
+                    <a class="btn btn-sm btn-outline-primary"
+                    href="{{ url_for('angehoerige.edit', angid=ang.id, next=request.full_path) }}">
+                    Bearbeiten
+                    </a>
+                  </td>
                 </tr>
                 {% endfor %}
               </tbody>

@@ -17,8 +17,10 @@ def edit(iid: int):
     adressen = Adresse.query.order_by(
         Adresse.strasse.asc(), Adresse.hausnummer.asc(), Adresse.ort.asc()
     ).all()
-    form.adresse_id.choices = [(0, "— keine Adresse —")] + [(a.id, str(a)) for a in adressen]
-    form.adresse_id.data = inst.adresse_id or 0
+    form.adresse_id.choices = [(a.id, str(a)) for a in adressen]
+
+    if request.method == "GET":
+        form.adresse_id.data = inst.adresse_id
 
     if form.validate_on_submit():
         inst.kurzbezeichnung = form.kurzbezeichnung.data
@@ -27,8 +29,7 @@ def edit(iid: int):
         inst.bemerkung = form.bemerkung.data
         inst.anschreibbar = bool(form.anschreibbar.data)
 
-        sel = form.adresse_id.data or 0
-        inst.adresse = db.session.get(Adresse, sel) if sel > 0 else None
+        inst.adresse = db.session.get(Adresse, form.adresse_id.data)
 
         try:
             db.session.commit()

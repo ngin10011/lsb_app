@@ -44,6 +44,9 @@ def create_app():
     from lsb_app.blueprints.institute import bp as institute_bp
     app.register_blueprint(institute_bp, url_prefix="/institute")
 
+    from lsb_app.blueprints.angehoerige import bp as angehoerige_bp
+    app.register_blueprint(angehoerige_bp, url_prefix="/angehoerige")
+
 
 
 

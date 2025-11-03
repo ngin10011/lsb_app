@@ -1,0 +1,61 @@
+<!-- lsb_app/templates/angehoerige/edit.html -->
+ {% extends "base.html" %}
+{% block title %}Angehörigen bearbeiten{% endblock %}
+{% block body %}
+<h1 class="h5 mb-3">Angehörigen bearbeiten
+  <small class="text-muted">(#{{ angehoeriger.id }})</small>
+</h1>
+
+<form method="post">
+  {{ form.csrf_token }}
+  <div class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label">{{ form.name.label }}</label>
+      {{ form.name(class="form-control") }}
+      {% for e in form.name.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">{{ form.vorname.label }}</label>
+      {{ form.vorname(class="form-control") }}
+      {% for e in form.vorname.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">{{ form.geschlecht.label }}</label>
+      {{ form.geschlecht(class="form-select") }}
+      {% for e in form.geschlecht.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+    </div>
+    <div class="col-md-4">
+        {{ form.verwandtschaftsgrad.label(class="form-label") }}
+        {{ form.verwandtschaftsgrad(class="form-control") }}
+    </div>
+    <div class="col-md-4">
+        {{ form.telefonnummer.label(class="form-label") }}
+        {{ form.telefonnummer(class="form-control") }}
+    </div>
+    <div class="col-md-4">
+        {{ form.email.label(class="form-label") }}
+        {{ form.email(class="form-control") }}
+    </div>
+  </div>
+
+    <div class="col-md-6">
+      {{ form.adresse_id.label(class="form-label") }}
+      <div class="d-flex gap-2">
+        {{ form.adresse_id(class="form-select") }}
+        {% if angehoeriger.adresse %}
+          <a class="btn btn-outline-secondary"
+             href="{{ url_for('addresses.edit', aid=angehoeriger.adresse.id, next=request.full_path) }}">
+            Adresse ändern
+          </a>
+        {% endif %}
+      </div>
+      {% for e in form.adresse_id.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+      <div class="form-text">Optional: bestehende Adresse verknüpfen oder leer lassen.</div>
+    </div>
+
+<div class="mt-4 d-flex gap-2">
+    <a href="{{ request.args.get('next') or url_for('patients.overview') }}" class="btn btn-outline-secondary">Abbrechen</a>
+    {{ form.submit(class="btn btn-primary") }}
+  </div>
+</form>
+{% endblock %}

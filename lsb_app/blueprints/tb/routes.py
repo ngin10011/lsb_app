@@ -70,7 +70,7 @@ def new():
             (-1, "➕ Neue Adresse anlegen…"),
             (-3, "Unbekannt"),
         ]
-        return render_template("tb_new.html", form=form)
+        return render_template("tb/new.html", form=form)
     
     if request.method == "POST" and ("add_relative" in request.form or "add_behoerde" in request.form):
         if not form.auftragsnummer.data:
@@ -83,7 +83,7 @@ def new():
         sub.sel_behoerde_id.choices = \
             [(0, "— keine Behörde —"), (-1, "➕ Neue Behörde anlegen…")] + [(b.id, b.name) for b in behoerden_all]
         sub.beh_adresse_id.choices = [(-1, "➕ Neue Adresse anlegen…")] + [(a.id, str(a)) for a in adressen]
-        return render_template("tb_new.html", form=form)
+        return render_template("tb/new.html", form=form)
 
 
 
@@ -92,11 +92,11 @@ def new():
         if form.meldeadresse_id.data != -1:
             adr_melde = Adresse.query.get(form.meldeadresse_id.data)
             if not adr_melde:
-                return render_template("tb_new.html", form=form, error="Meldeadresse nicht gefunden.")
+                return render_template("tb/new.html", form=form, error="Meldeadresse nicht gefunden.")
         else:
             required = ["new_strasse", "new_hausnummer", "new_plz", "new_ort"]
             if any(not getattr(form, f).data for f in required):
-                return render_template("tb_new.html", form=form, error="Bitte alle Felder der Meldeadresse ausfüllen.")
+                return render_template("tb/new.html", form=form, error="Bitte alle Felder der Meldeadresse ausfüllen.")
             adr_melde = Adresse.query.filter_by(
                 strasse=form.new_strasse.data,
                 hausnummer=form.new_hausnummer.data,
@@ -117,7 +117,7 @@ def new():
         elif sel == -1:
             required2 = ["auftrag_strasse", "auftrag_hausnummer", "auftrag_plz", "auftrag_ort"]
             if any(not getattr(form, f).data for f in required2):
-                return render_template("tb_new.html", form=form, error="Bitte alle Felder der Auftragsadresse ausfüllen.")
+                return render_template("tb/new.html", form=form, error="Bitte alle Felder der Auftragsadresse ausfüllen.")
             adr_auftrag = Adresse.query.filter_by(
                 strasse=form.auftrag_strasse.data,
                 hausnummer=form.auftrag_hausnummer.data,
@@ -133,7 +133,7 @@ def new():
         else:
             adr_auftrag = Adresse.query.get(sel)
             if not adr_auftrag:
-                return render_template("tb_new.html", form=form, error="Auftragsadresse nicht gefunden.")
+                return render_template("tb/new.html", form=form, error="Auftragsadresse nicht gefunden.")
 
         # --- Patient anlegen ---
         p = Patient()
@@ -154,18 +154,18 @@ def new():
         elif bi_sel == -1:
             # Minimalpflichten prüfen: Kurzbezeichnung & Firmenname
             if not form.bi_kurz.data or not form.bi_firma.data:
-                return render_template("tb_new.html", form=form, error="Bitte Kurzbezeichnung und Firmenname für das neue Bestattungsinstitut angeben.")
+                return render_template("tb/new.html", form=form, error="Bitte Kurzbezeichnung und Firmenname für das neue Bestattungsinstitut angeben.")
 
             # Adresse für das neue Institut bestimmen:
             if form.bi_adresse_id.data != -1:
                 bi_addr = Adresse.query.get(form.bi_adresse_id.data)
                 if not bi_addr:
-                    return render_template("tb_new.html", form=form, error="Ausgewählte Institutsadresse nicht gefunden.")
+                    return render_template("tb/new.html", form=form, error="Ausgewählte Institutsadresse nicht gefunden.")
             else:
                 # Neue Adresse anlegen → alle Felder nötig
                 req_bi_addr = [form.bi_strasse.data, form.bi_hausnummer.data, form.bi_plz.data, form.bi_ort.data]
                 if any(not v for v in req_bi_addr):
-                    return render_template("tb_new.html", form=form, error="Bitte alle Felder der neuen Institutsadresse ausfüllen.")
+                    return render_template("tb/new.html", form=form, error="Bitte alle Felder der neuen Institutsadresse ausfüllen.")
                 bi_addr = Adresse.query.filter_by(
                     strasse=form.bi_strasse.data,
                     hausnummer=form.bi_hausnummer.data,
@@ -193,7 +193,7 @@ def new():
         else:
             bi_obj = Bestattungsinstitut.query.get(bi_sel)
             if not bi_obj:
-                return render_template("tb_new.html", form=form, error="Bestattungsinstitut nicht gefunden.")
+                return render_template("tb/new.html", form=form, error="Bestattungsinstitut nicht gefunden.")
 
         # --- Auftrag anlegen ---
         a = Auftrag(
@@ -225,7 +225,7 @@ def new():
             elif choice == -1:     # neu
                 req = [f.strasse.data, f.hausnummer.data, f.plz.data, f.ort.data]
                 if any(not v for v in req):
-                    return render_template("tb_new.html", form=form, error="Bitte alle Felder der Angehörigenadresse ausfüllen.")
+                    return render_template("tb/new.html", form=form, error="Bitte alle Felder der Angehörigenadresse ausfüllen.")
                 ang_addr = Adresse.query.filter_by(
                     strasse=f.strasse.data,
                     hausnummer=f.hausnummer.data,
@@ -268,17 +268,17 @@ def new():
 
             # Neuanlage:
             if not f.name.data:
-                return render_template("tb_new.html", form=form, error="Bitte Namen der neuen Behörde angeben.")
+                return render_template("tb/new.html", form=form, error="Bitte Namen der neuen Behörde angeben.")
 
             # Adresse bestimmen
             if f.beh_adresse_id.data != -1:
                 beh_addr = Adresse.query.get(f.beh_adresse_id.data)
                 if not beh_addr:
-                    return render_template("tb_new.html", form=form, error="Ausgewählte Behördenadresse nicht gefunden.")
+                    return render_template("tb/new.html", form=form, error="Ausgewählte Behördenadresse nicht gefunden.")
             else:
                 req = [f.beh_strasse.data, f.beh_hausnummer.data, f.beh_plz.data, f.beh_ort.data]
                 if any(not v for v in req):
-                    return render_template("tb_new.html", form=form, error="Bitte alle Felder der neuen Behördenadresse ausfüllen.")
+                    return render_template("tb/new.html", form=form, error="Bitte alle Felder der neuen Behördenadresse ausfüllen.")
                 beh_addr = Adresse.query.filter_by(
                     strasse=f.beh_strasse.data,
                     hausnummer=f.beh_hausnummer.data,
@@ -306,7 +306,7 @@ def new():
         except IntegrityError:
             db.session.rollback()
             form.auftragsnummer.errors.append("Auftragsnummer bereits vergeben.")
-            return render_template("tb_new.html", form=form)
+            return render_template("tb/new.html", form=form)
 
         return redirect(url_for("patients.overview"))
 
