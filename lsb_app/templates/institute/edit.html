@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Bestattungsinstitut bearbeiten{% endblock %}
+
+{% block body %}
+<h1 class="h5 mb-3">
+  Bestattungsinstitut bearbeiten
+  <small class="text-muted">(#{{ institut.id }})</small>
+</h1>
+
+<form method="post" novalidate>
+  {{ form.csrf_token }}
+
+  <div class="row g-3">
+    <div class="col-md-4">
+      {{ form.kurzbezeichnung.label(class="form-label") }}
+      {{ form.kurzbezeichnung(class="form-control") }}
+      {% for e in form.kurzbezeichnung.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+    </div>
+    <div class="col-md-8">
+      {{ form.firmenname.label(class="form-label") }}
+      {{ form.firmenname(class="form-control") }}
+      {% for e in form.firmenname.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="col-md-6">
+      {{ form.email.label(class="form-label") }}
+      {{ form.email(class="form-control") }}
+      {% for e in form.email.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+    </div>
+    <div class="col-md-6">
+      {{ form.bemerkung.label(class="form-label") }}
+      {{ form.bemerkung(class="form-control") }}
+      {% for e in form.bemerkung.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="col-md-6">
+      {{ form.adresse_id.label(class="form-label") }}
+      <div class="d-flex gap-2">
+        {{ form.adresse_id(class="form-select") }}
+        {% if institut.adresse %}
+          <a class="btn btn-outline-secondary"
+             href="{{ url_for('addresses.edit', aid=institut.adresse.id, next=request.full_path) }}">
+            Adresse ändern
+          </a>
+        {% endif %}
+      </div>
+      {% for e in form.adresse_id.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+      <div class="form-text">Optional: bestehende Adresse verknüpfen oder leer lassen.</div>
+    </div>
+
+    <div class="col-md-6 d-flex align-items-end">
+      <div class="form-check mt-2">
+        {{ form.anschreibbar(class="form-check-input", id="anschreibbarCheck") }}
+        <label class="form-check-label" for="anschreibbarCheck">Anschreibbar</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 d-flex gap-2">
+    <a href="{{ request.args.get('next') or url_for('patients.overview') }}" class="btn btn-outline-secondary">Abbrechen</a>
+    {{ form.submit(class="btn btn-primary") }}
+  </div>
+</form>
+{% endblock %}
