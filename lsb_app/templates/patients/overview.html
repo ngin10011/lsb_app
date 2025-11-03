@@ -81,7 +81,6 @@
         <th>Angehörige</th>
         <th>Bestattungsinstitut</th>
         <th>Behörden</th>
-        <th></th>
       </tr>
     </thead>
 
@@ -89,7 +88,11 @@
       {% for p in patients %}
       {% set a = p.auftrag %}
       <tr>
-        <td>{{ a.auftragsnummer if a and a.auftragsnummer is not none else '—' }}</td>
+        <td>
+          <a href="{{ url_for('patients.detail', pid=p.id) }}">
+          {{ '{:04d}'.format(a.auftragsnummer) if a and a.auftragsnummer is not none else '—' }}
+          </a>
+        </td>
 
         <td>{{ p.name }}</td>
         <td>{{ p.vorname }}</td>
@@ -122,12 +125,6 @@
           {% endif %}
         </td>
 
-        <td class="text-end">
-          <a href="{{ url_for('patients.detail', pid=p.id) }}"
-             class="btn btn-sm btn-primary">
-            Details
-          </a>
-        </td>
       </tr>
       {% endfor %}
     </tbody>

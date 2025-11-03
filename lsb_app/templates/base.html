@@ -23,13 +23,7 @@
             <div class="navbar-nav">
                 <a class="nav-link" href="{{ url_for('home.index')}}">Home</a>
                 <a class="nav-link" href="{{ url_for('tb.new') }}">TB anlegen</a>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Patienten</a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{{ url_for('patients.overview') }}">Übersicht</a></li>
-                        <li><a class="dropdown-item" href="#">Patienten hinzufügen</a></li>
-                    </ul>
-                </li>
+                <a class="nav-link" href="{{ url_for('patients.overview') }}">Patienten</a>
                 <a class="nav-link" href="{{ url_for('debug.db_overview') }}">DB-Übersicht</a>
             </div>
         </div>
