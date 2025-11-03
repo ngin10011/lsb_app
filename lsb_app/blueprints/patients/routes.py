@@ -6,6 +6,7 @@ from lsb_app.blueprints.patients import bp
 from lsb_app.extensions import db
 from lsb_app.models import Patient, Auftrag, AuftragsStatusEnum
 from lsb_app.forms import PatientForm
+from lsb_app.models.adresse import Adresse
 
 @bp.route("/", methods=["GET"])
 def overview():
@@ -118,13 +119,24 @@ def edit(pid: int):
 
     form = PatientForm(obj=patient)
 
+    # # Adressauswahl
+    adressen = Adresse.query.order_by(
+        Adresse.strasse.asc(), Adresse.hausnummer.asc(), Adresse.ort.asc()
+    ).all()
+    form.meldeadresse_id.choices = [(a.id, str(a)) for a in adressen]
+
+    if request.method == "GET":
+        form.meldeadresse_id.data = patient.meldeadresse_id
+
     if form.validate_on_submit():
         # WTForms-Felder -> Model
         patient.name = form.name.data
         patient.geburtsname = form.geburtsname.data
         patient.vorname = form.vorname.data
         patient.geburtsdatum = form.geburtsdatum.data
-        patient.geschlecht = form.geschlecht.data  # Enum via coerce
+        patient.geschlecht = form.geschlecht.data
+
+        patient.meldeadresse = db.session.get(Adresse, form.meldeadresse_id.data)
 
         try:
             db.session.commit()

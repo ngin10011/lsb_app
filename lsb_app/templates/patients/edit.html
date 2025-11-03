@@ -36,6 +36,21 @@
     </div>
   </div>
 
+    <div class="col-md-6">
+      {{ form.meldeadresse_id.label(class="form-label") }}
+      <div class="d-flex gap-2">
+        {{ form.meldeadresse_id(class="form-select") }}
+        {% if patient.meldeadresse %}
+          <a class="btn btn-outline-secondary"
+             href="{{ url_for('addresses.edit', aid=patient.meldeadresse.id, next=request.full_path) }}">
+            Adresse ändern
+          </a>
+        {% endif %}
+      </div>
+      {% for e in form.meldeadresse_id.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+      <div class="form-text">Optional: bestehende Adresse verknüpfen oder leer lassen.</div>
+    </div>
+
   <div class="mt-4">
     <a href="{{ url_for('patients.detail', pid=patient.id) }}" class="btn btn-outline-secondary">Abbrechen</a>
     {{ form.submit(class="btn btn-primary") }}

@@ -21,6 +21,8 @@ class PatientForm(FlaskForm):
     vorname = StringField("Vorname", validators=[DataRequired(), Length(max=120)], filters=[strip_or_none])
     geburtsdatum = DateField("Geburtsdatum", validators=[DataRequired()], format="%Y-%m-%d")
     geschlecht = SelectField("Geschlecht", choices=[], validators=[DataRequired()], coerce=coerce_geschlecht)
+    meldeadresse_id = SelectField("Adresse", coerce=int,
+                             validators=[DataRequired(message="Bitte eine Adresse auswählen.")])
     submit = SubmitField("Speichern")
 
     def __init__(self, *args, **kwargs):
