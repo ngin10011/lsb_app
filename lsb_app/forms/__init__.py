@@ -5,6 +5,7 @@ from .address import AddressForm
 from .auftrag import AuftragForm
 from .institut import InstitutForm
 from .angehoeriger import AngehoerigerForm
+from .behoerde import BehoerdeForm
 
 __all__ = ["PatientForm", "TBPatientForm", "AddressForm", "AuftragForm",
-           "InstitutForm", "AngehoerigerForm"]
+           "InstitutForm", "AngehoerigerForm", "BehoerdeForm"]

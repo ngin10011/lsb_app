@@ -184,6 +184,7 @@
                   <th>E-Mail</th>
                   <th>Bemerkung</th>
                   <th>Adresse</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -193,6 +194,12 @@
                   <td>{{ show(beh.email) }}</td>
                   <td>{{ show(beh.bemerkung) }}</td>
                   <td>{{ addr(beh.adresse) }}</td>
+                  <td>          
+                    <a class="btn btn-sm btn-outline-primary"
+                    href="{{ url_for('behoerden.edit', bid=beh.id, next=request.full_path) }}">
+                    Bearbeiten
+                    </a>
+                  </td>
                 </tr>
                 {% endfor %}
               </tbody>

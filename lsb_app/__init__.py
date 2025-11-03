@@ -47,6 +47,9 @@ def create_app():
     from lsb_app.blueprints.angehoerige import bp as angehoerige_bp
     app.register_blueprint(angehoerige_bp, url_prefix="/angehoerige")
 
+    from lsb_app.blueprints.behoerden import bp as behoerden_bp
+    app.register_blueprint(behoerden_bp, url_prefix="/behoerden")
+
 
 
 
