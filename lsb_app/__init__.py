@@ -23,6 +23,7 @@ def create_app():
 
     # Sensitive Business-Daten
     app.config["COMPANY_NAME"] = os.getenv("COMPANY_NAME", "NAME_NICHT_GESETZT")
+    app.config["COMPANY_ROLE"] = os.getenv("COMPANY_ROLE", "")
     app.config["COMPANY_ADDRESS"] = os.getenv("COMPANY_ADDRESS", "")
     app.config["COMPANY_PHONE"] = os.getenv("COMPANY_PHONE", "")
     app.config["COMPANY_EMAIL"] = os.getenv("COMPANY_EMAIL", "")

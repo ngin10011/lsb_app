@@ -98,32 +98,32 @@
 </head>
 <body>
     <header>
-        <div class="logo">{{ config.COMPANY_NAME }}</div>
-        <div>{{ config.COMPANY_ROLE }}<br>{{ config.COMPANY_ADDRESS }}<br>Tel: {{ config.COMPANY_PHONE }} - {{ config.COMPANY_EMAIL }}</div>
+        <div class="logo">{{ vm.config.COMPANY_NAME }}</div>
+        <div>{{ vm.config.COMPANY_ROLE }}<br>{{ vm.config.COMPANY_ADDRESS }}<br>Tel: {{ vm.config.COMPANY_PHONE }} - {{ vm.config.COMPANY_EMAIL }}</div>
     </header>
 
     <div class="anschrift-block">
         <div class="anschrift-kopfzeile">
-            {{ config.COMPANY_NAME }} - {{ config.COMPANY_ADDRESS }}
+            {{ vm.config.COMPANY_NAME }} - {{ vm.config.COMPANY_ADDRESS }}
         </div>
-        {{ anschrift|safe }}
+        {{ vm.anschrift_html|safe }}
     </div>
 
     <div class="bankdaten-block">
         <p><strong>Bankverbindung:</strong><br>
-        IBAN: {{ config.BANK_IBAN }}<br>
-        BIC: {{ config.BANK_BIC }}<br>
-        Verwendungszweck: Rechnung LS-{{ rechnungsnummer }}</p>
+        IBAN: {{ vm.config.BANK_IBAN }}<br>
+        BIC: {{ vm.config.BANK_BIC }}<br>
+        Verwendungszweck: {{ vm.verwendungszweck }}</p>
     </div>
 
     <div class="content">
         <div class="title">RECHNUNG</div>
 
         <section class="meta">
-            <p><strong>Rechnungsnummer:</strong> LS-{{ '{:04d}'.format(rechnungsnummer) }}<br>
-            <strong>Rechnungsdatum:</strong> {{ rechnungsdatum }}<br>
-            <strong>Leichenschau am:</strong> {{ auftragsdatum }}<br><br>
-            <strong>{{ gender_wort }}:</strong> {{ nachname }}, {{ vorname }} (*{{ geburtsdatum }})</p>
+            <p><strong>Rechnungsnummer:</strong> {{ vm.rechnungsnummer_str }}<br>
+            <strong>Rechnungsdatum:</strong> {{ vm.rechnungsdatum.strftime("%d.%m.%Y") }}<br>
+            <strong>Leichenschau am:</strong> {{ vm.auftragsdatum.strftime("%d.%m.%Y")}}<br><br>
+            <strong>{{ vm.verstorbener_gegendert }}:</strong> {{ vm.patient_name_komplett }} (*{{ vm.patient_geburtsdatum }})</p>
         </section>
 
         <table>
@@ -135,7 +135,7 @@
                 </tr>
             </thead>
             <tbody>
-                {% for eintrag in leistungen %}
+                {% for eintrag in vm.leistungen %}
                 <tr>
                     <td>{{ eintrag.kurz }}</td>
                     <td>{{ eintrag.beschreibung }}</td>
@@ -146,7 +146,7 @@
             <tfoot>
                 <tr>
                     <td colspan="2" class="right">Summe</td>
-                    <td class="right total">{{ summe }}</td>
+                    <td class="right total">{{ vm.summe_str }}</td>
                 </tr>
             </tfoot>
         </table>
@@ -157,7 +157,7 @@
     </div>
 
     <section class="seitenfooter">
-        <p>Steuernummer: {{ config.TAX_NUMBER }}</p>
+        <p>Steuernummer: {{ vm.config.TAX_NUMBER }}</p>
     </section>
 
 </body>
