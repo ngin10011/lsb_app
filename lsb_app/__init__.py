@@ -31,6 +31,10 @@ def create_app():
     app.config["BANK_BIC"] = os.getenv("BANK_BIC", "")
     app.config["TAX_NUMBER"] = os.getenv("TAX_NUMBER", "")
 
+    # openrouteservice
+    app.config["STARTADRESSE"] = os.getenv("STARTADRESSE", "")
+    app.config["ORS_API_KEY"] = os.getenv("ORS_API_KEY", "")
+
     # Für Jinja verfügbar machen: {{ config.BANK_IBAN }} usw.
     @app.context_processor
     def inject_config():
