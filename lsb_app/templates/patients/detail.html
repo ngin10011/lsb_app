@@ -217,4 +217,10 @@
 <div class="mt-4">
   <a href="{{ url_for('patients.overview') }}" class="btn btn-outline-secondary btn-sm">Zur Übersicht</a>
 </div>
+<div class="mt-4">
+    <a class="btn btn-sm btn-outline-primary"
+  href="{{ url_for('rechnungen.rechnung', aid=patient.auftrag.id, next=request.full_path) }}">
+  Rechnung anzeigen
+  </a>
+</div>
 {% endblock %}
