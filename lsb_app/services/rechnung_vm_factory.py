@@ -7,7 +7,19 @@ from decimal import Decimal, ROUND_HALF_UP
 import holidays
 from lsb_app.services.entfernungsrechner import berechne_entfernung
 
-
+def wegegeld_berechnen(dist, uhr):
+    if time(8, 0) <= uhr <= time(20, 0):
+        if dist < 2: return "< 2 km (tags)", "3,58"
+        if dist < 5: return "2 - 5 km (tags)", "6,65"
+        if dist < 10: return "5 - 10 km (tags)", "10,23"
+        if dist < 25: return "10 - 25 km (tags)", "15,34"
+        return "> 25 km (0,26 €/km)", f"{2 * dist * 0.26:.2f}".replace(".", ",")
+    else:
+        if dist < 2: return "< 2 km (nachts)", "7,16"
+        if dist < 5: return "2 - 5 km (nachts)", "10,23"
+        if dist < 10: return "5 - 10 km (nachts)", "15,34"
+        if dist < 25: return "10 - 25 km (nachts)", "25,56"
+        return "> 25 km (0,26 €/km)", f"{2 * dist * 0.26:.2f}".replace(".", ",")
 
 def build_rechnung_vm(auftrag, cfg, anschrift_html: str, rechnungsdatum: date) -> RechnungVM:
     
@@ -70,19 +82,7 @@ def build_rechnung_vm(auftrag, cfg, anschrift_html: str, rechnungsdatum: date) -
     else:
         fahrstrecke = auftrag.auftragsadresse.distanz
 
-    def wegegeld_berechnen(dist, uhr):
-        if time(8, 0) <= uhr <= time(20, 0):
-            if dist < 2: return "< 2 km (tags)", "3,58"
-            if dist < 5: return "2 - 5 km (tags)", "6,65"
-            if dist < 10: return "5 - 10 km (tags)", "10,23"
-            if dist < 25: return "10 - 25 km (tags)", "15,34"
-            return "> 25 km (0,26 €/km)", f"{2 * dist * 0.26:.2f}".replace(".", ",")
-        else:
-            if dist < 2: return "< 2 km (nachts)", "7,16"
-            if dist < 5: return "2 - 5 km (nachts)", "10,23"
-            if dist < 10: return "5 - 10 km (nachts)", "15,34"
-            if dist < 25: return "10 - 25 km (nachts)", "25,56"
-            return "> 25 km (0,26 €/km)", f"{2 * dist * 0.26:.2f}".replace(".", ",")
+
 
     wg_text, wg_betrag = wegegeld_berechnen(fahrstrecke, uhrzeit)
 
@@ -93,6 +93,12 @@ def build_rechnung_vm(auftrag, cfg, anschrift_html: str, rechnungsdatum: date) -
     ))
 
     # TODO Mehraufwand
+    if auftrag.mehraufwand:
+        leistungen.append(LeistungVM(
+            kurz="GOÄ-Nr. 102",
+            beschreibung="Zuschlag bei besonderen Todesumständen",
+            betrag="27,63"
+        ))
 
     summe = sum(Decimal(e.betrag.replace(",", ".")) for e in leistungen).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     summe_str = str(summe).replace(".", ",")
