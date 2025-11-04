@@ -7,3 +7,4 @@ Faker>=25.0.0
 email-validator
 weasyprint
 flask_migrate
+holidays

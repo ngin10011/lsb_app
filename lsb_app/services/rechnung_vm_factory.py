@@ -3,6 +3,7 @@ from datetime import date, time
 from lsb_app.viewmodels.rechnung_vm import RechnungVM, LeistungVM
 from markupsafe import Markup
 from decimal import Decimal, ROUND_HALF_UP
+import holidays
 
 def build_rechnung_vm(auftrag, cfg, anschrift_html: str, rechnungsdatum: date) -> RechnungVM:
     
@@ -33,6 +34,15 @@ def build_rechnung_vm(auftrag, cfg, anschrift_html: str, rechnungsdatum: date) -
             kurz="Zuschlag G",
             beschreibung="Leistungszeit 22-6 Uhr",
             betrag="26,23"
+        ))
+    
+    datum = auftrag.auftragsdatum
+
+    if datum.weekday() >= 5 or datum in holidays.Germany(prov="BY"):
+        leistungen.append(LeistungVM(
+            kurz="Zuschlag H",
+            beschreibung="Leistung an Samstagen, Sonntagen oder Feiertagen",
+            betrag="19,82"
         ))
 
     summe = sum(Decimal(e.betrag.replace(",", ".")) for e in leistungen).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
