@@ -13,12 +13,9 @@ from datetime import date
 def rechnung(aid):
     auftrag = Auftrag.query.get_or_404(aid)
 
-    anschrift_html = "Roberta Metsola<br>Musterweg 1<br>54321 Musterdorf"
-
     vm = build_rechnung_vm(
         auftrag=auftrag,
         cfg=current_app.config,
-        anschrift_html=anschrift_html,
         rechnungsdatum=date.today()
     )
     return render_template("rechnungen/standard.html", vm=vm)

@@ -51,9 +51,8 @@ def erstelle_anschrift_html_angehoeriger(auftrag) -> str:
         anschrift_html = f"{angehoeriger.name}, {angehoeriger.vorname}<br>{adr_ang.strasse} {adr_ang.hausnummer}<br>{adr_ang.plz} {adr_ang.ort}"
         return anschrift_html
 
-def build_rechnung_vm(auftrag, cfg, anschrift_html: str, rechnungsdatum: date) -> RechnungVM:
+def build_rechnung_vm(auftrag, cfg, rechnungsdatum: date) -> RechnungVM:
     
-    #TODO anschrift nicht mehr an Methode übergeben
     val = getattr(auftrag.kostenstelle, "value", auftrag.kostenstelle)
     kostenstelle = (val or "").lower()
 
@@ -64,9 +63,6 @@ def build_rechnung_vm(auftrag, cfg, anschrift_html: str, rechnungsdatum: date) -
         adr_beh = behoerde.adresse
         anschrift_html = f"{behoerde.name}<br>{adr_beh.strasse} {adr_beh.hausnummer}<br>{adr_beh.plz} {adr_beh.ort}"
     elif kostenstelle == "bestattungsinstitut":
-        #TODO Standard: Bestattungsinstitut alleine; 
-        # ggf. "zur Weiterleitung an die Angehörigen + Bestattungsinstitut" 
-        # ggf. direkt nur Angehörige
         anschrift_html = erstelle_anschrift_html_bestattungsinstitut(auftrag)
     else:
         anschrift_html = "<p>unbekannt</p>"
