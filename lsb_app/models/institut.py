@@ -1,6 +1,7 @@
 # lsb_app/models/institut.py
 from lsb_app.extensions import db
 from lsb_app.models.base import IDMixin, TimestampMixin
+from lsb_app.models import RechnungsadressModus
 
 class Bestattungsinstitut(IDMixin, TimestampMixin, db.Model):
     __tablename__ = "bestattungsinstitut"
@@ -14,6 +15,11 @@ class Bestattungsinstitut(IDMixin, TimestampMixin, db.Model):
     email = db.Column(db.String(120))
     anschreibbar = db.Column(db.Boolean, default=True)
     bemerkung = db.Column(db.Text)
+
+    rechnungadress_modus = db.Column(
+        db.Enum(RechnungsadressModus), nullable=False,
+        server_default=RechnungsadressModus.INSTITUT.value
+    )
 
     # 1:n zu Auftrag
     auftraege = db.relationship(

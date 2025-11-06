@@ -30,6 +30,7 @@ def edit(iid: int):
         inst.anschreibbar = bool(form.anschreibbar.data)
 
         inst.adresse = db.session.get(Adresse, form.adresse_id.data)
+        inst.rechnungadress_modus = form.rechnungadress_modus.data
 
         try:
             db.session.commit()

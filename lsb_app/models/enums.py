@@ -24,3 +24,8 @@ class RechnungsArtEnum(str, enum.Enum):
     ERSTRECHNUNG = "Erstrechnung"
     MAHNUNG = "Mahnung"
     STORNO = "Storno"
+
+class RechnungsadressModus(str, enum.Enum):
+    INSTITUT = "INSTITUT"
+    INSTITUT_WEITERLEITUNG = "INSTITUT_WEITERLEITUNG"
+    ANGEHOERIGE = "ANGEHOERIGE"

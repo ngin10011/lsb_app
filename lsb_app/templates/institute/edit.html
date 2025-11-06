@@ -54,6 +54,12 @@
       {% for e in form.adresse_id.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
     </div>
 
+    <div class="col-md-3">
+      <label class="form-label">{{ form.rechnungadress_modus.label }}</label>
+      {{ form.rechnungadress_modus(class="form-select") }}
+      {% for e in form.rechnungadress_modus.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+    </div>
+
   </div>
 
   <div class="mt-4 d-flex gap-2">

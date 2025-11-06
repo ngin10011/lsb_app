@@ -1,13 +1,14 @@
 # lsb_app/services/rechnung_vm_factory.py
 from datetime import date, time
 from lsb_app.viewmodels.rechnung_vm import RechnungVM, LeistungVM
+from lsb_app.models import RechnungsadressModus
 from lsb_app.extensions import db
 from markupsafe import Markup
 from decimal import Decimal, ROUND_HALF_UP
 import holidays
 from lsb_app.services.entfernungsrechner import berechne_entfernung
 
-def wegegeld_berechnen(dist, uhr):
+def wegegeld_berechnen(dist, uhr) -> str:
     if time(8, 0) <= uhr <= time(20, 0):
         if dist < 2: return "< 2 km (tags)", "3,58"
         if dist < 5: return "2 - 5 km (tags)", "6,65"
@@ -20,8 +21,55 @@ def wegegeld_berechnen(dist, uhr):
         if dist < 10: return "5 - 10 km (nachts)", "15,34"
         if dist < 25: return "10 - 25 km (nachts)", "25,56"
         return "> 25 km (0,26 €/km)", f"{2 * dist * 0.26:.2f}".replace(".", ",")
+    
+def erstelle_anschrift_html_bestattungsinstitut(auftrag) -> str:
+    inst = auftrag.bestattungsinstitut
+    if not inst:
+        #TODO Fehlerbehandlung
+        return "<p>Bestattungsinstitut</p>"
+
+    modus = inst.rechnungadress_modus
+    adr = inst.adresse
+
+    inst_block = f"{inst.firmenname}<br>{adr.strasse} {adr.hausnummer}<br>{adr.plz} {adr.ort}"
+
+    if modus == RechnungsadressModus.INSTITUT:
+        return inst_block
+    elif modus == RechnungsadressModus.INSTITUT_WEITERLEITUNG:
+        header = "Zur Weiterleitung an die Angehörigen"
+        return f"{header}<br>{inst_block}"
+    elif modus == RechnungsadressModus.ANGEHOERIGE:
+        #TODO Fehlerbehandlung falls kein Angehöriger vorhanden
+        return erstelle_anschrift_html_angehoeriger(auftrag)
+    
+    #TODO Fehlerbehandlung
+    return "<p>Bestattungsinstitut</p>"
+
+def erstelle_anschrift_html_angehoeriger(auftrag) -> str:
+        angehoeriger = auftrag.patient.angehoerige[0]
+        adr_ang = angehoeriger.adresse
+        anschrift_html = f"{angehoeriger.name}, {angehoeriger.vorname}<br>{adr_ang.strasse} {adr_ang.hausnummer}<br>{adr_ang.plz} {adr_ang.ort}"
+        return anschrift_html
 
 def build_rechnung_vm(auftrag, cfg, anschrift_html: str, rechnungsdatum: date) -> RechnungVM:
+    
+    #TODO anschrift nicht mehr an Methode übergeben
+    val = getattr(auftrag.kostenstelle, "value", auftrag.kostenstelle)
+    kostenstelle = (val or "").lower()
+
+    if kostenstelle == "angehörige":
+        anschrift_html = erstelle_anschrift_html_angehoeriger(auftrag)
+    elif kostenstelle == "behörde":
+        behoerde = auftrag.behoerden[0]
+        adr_beh = behoerde.adresse
+        anschrift_html = f"{behoerde.name}<br>{adr_beh.strasse} {adr_beh.hausnummer}<br>{adr_beh.plz} {adr_beh.ort}"
+    elif kostenstelle == "bestattungsinstitut":
+        #TODO Standard: Bestattungsinstitut alleine; 
+        # ggf. "zur Weiterleitung an die Angehörigen + Bestattungsinstitut" 
+        # ggf. direkt nur Angehörige
+        anschrift_html = erstelle_anschrift_html_bestattungsinstitut(auftrag)
+    else:
+        anschrift_html = "<p>unbekannt</p>"
     
     leistungen = []
     leistungen.append(LeistungVM(
@@ -82,8 +130,6 @@ def build_rechnung_vm(auftrag, cfg, anschrift_html: str, rechnungsdatum: date) -
     else:
         fahrstrecke = auftrag.auftragsadresse.distanz
 
-
-
     wg_text, wg_betrag = wegegeld_berechnen(fahrstrecke, uhrzeit)
 
     leistungen.append(LeistungVM(
@@ -92,7 +138,6 @@ def build_rechnung_vm(auftrag, cfg, anschrift_html: str, rechnungsdatum: date) -
         betrag=wg_betrag
     ))
 
-    # TODO Mehraufwand
     if auftrag.mehraufwand:
         leistungen.append(LeistungVM(
             kurz="GOÄ-Nr. 102",
