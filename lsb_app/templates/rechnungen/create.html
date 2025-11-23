@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Rechnung erstellen{% endblock %}
+
+{% block body %}
+<h1 class="h5 mb-3">
+  Rechnung erstellen
+  <small class="text-muted">(#{{ auftrag.id }})</small>
+</h1>
+
+<form method="post" novalidate>
+    {{ form.csrf_token }}
+
+<p>DEBUG: Auftrag: {{auftrag.auftragsnummer}}</p>
+
+<p>Liste der bereits vorhandenen Rechnungen?</p>
+
+    <div class="col-md-3">
+      <label class="form-label">{{ form.art.label }}</label>
+      {{ form.art(class="form-select") }}
+      {% for e in form.art.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">{{ form.rechnungsdatum.label }}</label>
+      {{ form.rechnungsdatum(class="form-control", type="date") }}
+      {% for e in form.rechnungsdatum.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="col-md-6">
+      {{ form.bemerkung.label(class="form-label") }}
+      {{ form.bemerkung(class="form-control") }}
+      {% for e in form.bemerkung.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+    </div>
+
+    <div class="mt-3">
+    {{ form.submit(class="btn btn-primary") }}
+    </div>
+
+</form>
+{% endblock %}

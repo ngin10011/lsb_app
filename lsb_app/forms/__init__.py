@@ -6,6 +6,8 @@ from .auftrag import AuftragForm
 from .institut import InstitutForm
 from .angehoeriger import AngehoerigerForm
 from .behoerde import BehoerdeForm
+from .rechnung import RechnungForm
 
 __all__ = ["PatientForm", "TBPatientForm", "AddressForm", "AuftragForm",
-           "InstitutForm", "AngehoerigerForm", "BehoerdeForm"]
+           "InstitutForm", "AngehoerigerForm", "BehoerdeForm",
+           "RechnungForm"]

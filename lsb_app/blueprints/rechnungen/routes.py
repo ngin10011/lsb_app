@@ -1,11 +1,37 @@
 # lsb_app/blueprints/invoices/routes.py
-from flask import Blueprint, current_app, render_template, request, Response, send_file
+from flask import url_for, current_app, render_template, request, flash, send_file, redirect
 from lsb_app.blueprints.rechnungen import bp
-from lsb_app.models import Patient, Auftrag, AuftragsStatusEnum
+from lsb_app.models import Rechnung, Auftrag, AuftragsStatusEnum
 from lsb_app.services.rechnung_vm_factory import build_rechnung_vm
 from datetime import date
 from weasyprint import HTML
 from pathlib import Path
+from lsb_app.forms import RechnungForm
+from lsb_app.extensions import db
+from decimal import Decimal
+
+@bp.route("/<int:aid>/create", methods=["GET", "POST"])
+def create(aid):
+    auftrag = Auftrag.query.get_or_404(aid)
+    form = RechnungForm()
+
+    if form.validate_on_submit():
+        rechnung = Rechnung(
+            version=1,  # oder was immer deine Startversion ist
+            art=form.art.data,  # ist schon RechnungsArtEnum dank coerce
+            rechnungsdatum=form.rechnungsdatum.data,  # datetime.date
+            bemerkung=form.bemerkung.data,  # str oder None
+            betrag=Decimal("0.00"),  # TODO: hier später sinnvoll berechnen
+            auftrag=auftrag,  # setzt automatisch auftrag_id
+        )
+
+        db.session.add(rechnung)
+        db.session.commit()
+
+        flash("Rechnung wurde gespeichert.", "success")
+        return redirect(url_for("patients.detail", pid=auftrag.patient_id))
+
+    return render_template("rechnungen/create.html", auftrag=auftrag, form=form)
 
 @bp.get("/<int:aid>")
 def rechnung(aid):

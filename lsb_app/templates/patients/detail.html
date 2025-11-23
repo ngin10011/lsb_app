@@ -212,6 +212,50 @@
     </div>
   </div>
 
+  <!-- Rechnungen (1:n) -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Rechnungen</h2>
+        {% if patient.auftrag and patient.auftrag.rechnungen %}
+          <div class="table-responsive">
+            <table class="table table-sm table-striped align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Version</th>
+                  <th>Art</th>
+                  <th>Rechnungsdatum</th>
+                  <th>Betrag</th>
+                  <th>Bemerkung</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for inv in patient.auftrag.rechnungen %}
+                <tr>
+                  <td>{{ inv.version }}</td>
+                  <td>{{ inv.art }}</td>
+                  <td>{{ inv.rechnungsdatum }}</td>
+                  <td>{{ inv.betrag }}</td>
+                  <td>{{ inv.bemerkung }}</td>
+                  <td>          
+                    <a class="btn btn-sm btn-outline-primary"
+                    href="#">
+                    Bearbeiten
+                    </a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="text-muted">Keine Rechnungen erfasst.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <div class="mt-4">
