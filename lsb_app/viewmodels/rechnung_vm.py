@@ -16,6 +16,8 @@ class RechnungVM:
     auftrag_id: int
     auftragsnummer: int
 
+    rechnungsart: str
+
     rechnungsdatum: date
     auftragsdatum: date
 

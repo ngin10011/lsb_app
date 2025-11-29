@@ -51,7 +51,7 @@ def erstelle_anschrift_html_angehoeriger(auftrag) -> str:
         anschrift_html = f"{angehoeriger.name}, {angehoeriger.vorname}<br>{adr_ang.strasse} {adr_ang.hausnummer}<br>{adr_ang.plz} {adr_ang.ort}"
         return anschrift_html
 
-def build_rechnung_vm(auftrag, cfg, rechnungsdatum: date) -> RechnungVM:
+def build_rechnung_vm(auftrag, cfg, rechnungsdatum: date, rechnungsart: str) -> RechnungVM:
     
     val = getattr(auftrag.kostenstelle, "value", auftrag.kostenstelle)
     kostenstelle = (val or "").lower()
@@ -143,10 +143,14 @@ def build_rechnung_vm(auftrag, cfg, rechnungsdatum: date) -> RechnungVM:
 
     summe = sum(Decimal(e.betrag.replace(",", ".")) for e in leistungen).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     summe_str = str(summe).replace(".", ",")
+
+    # rechnungsart = "TEST"
     
     return RechnungVM(
         auftrag_id=auftrag.id,
         auftragsnummer=auftrag.auftragsnummer,
+
+        rechnungsart=rechnungsart,
 
         rechnungsdatum=rechnungsdatum,
         auftragsdatum=auftrag.auftragsdatum,

@@ -2,7 +2,8 @@
 from flask import (url_for, current_app, render_template, request, flash, send_file, 
                    redirect, abort)
 from lsb_app.blueprints.rechnungen import bp
-from lsb_app.models import Rechnung, Auftrag, AuftragsStatusEnum, RechnungsStatusEnum
+from lsb_app.models import (Rechnung, Auftrag, AuftragsStatusEnum, RechnungsStatusEnum,
+                            RechnungsArtEnum)
 from lsb_app.services.rechnung_vm_factory import build_rechnung_vm
 from datetime import date
 from weasyprint import HTML
@@ -21,11 +22,19 @@ def generate_and_save_rechnung_pdf(rechnung: Rechnung) -> Path:
     
     auftrag = rechnung.auftrag
 
+    if rechnung.art == RechnungsArtEnum.MAHNUNG:
+        rechnungsart_str = "MAHNUNG"
+    else:
+        rechnungsart_str = "RECHNUNG"
+    # rechnungsart = getattr(rechnung.art, "value", rechnung.art)
+
     # ViewModel auf Basis des Auftrags + Rechnungsdatum der Rechnung
     vm = build_rechnung_vm(
         auftrag=auftrag,
         cfg=current_app.config,
         rechnungsdatum=rechnung.rechnungsdatum,
+        # rechnungsart=rechnung.art,
+        rechnungsart=rechnungsart_str,
     )
 
     # HTML rendern
@@ -76,6 +85,7 @@ def create(aid):
                 auftrag=auftrag,
                 cfg=current_app.config,
                 rechnungsdatum=form.rechnungsdatum.data,
+                rechnungsart=form.art.data,
             )
             betrag = Decimal(vm.summe_str.replace(",", "."))
             logger.info(
