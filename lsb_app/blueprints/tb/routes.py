@@ -1,10 +1,11 @@
 # lsb_app/blueprints/tb/routes.py
-from flask import Flask, render_template, redirect, url_for, request
+from flask import render_template, redirect, url_for, request, jsonify
 import os
 from dotenv import load_dotenv
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import CSRFProtect
 from lsb_app.forms import PatientForm, TBPatientForm
+from lsb_app.services.address_validation import check_address_exists
 import enum
 from sqlalchemy.inspection import inspect as sa_inspect
 from sqlalchemy import event, func, cast, Integer
@@ -27,6 +28,33 @@ logger = logging.getLogger(__name__)
 def _next_auftragsnummer():
     max_num = db.session.query(func.max(Auftrag.auftragsnummer)).scalar()
     return (max_num or 0) + 1
+
+@bp.route("/api/validate_address", methods=["POST"])
+def api_validate_address():
+    """
+    Live-Adressprüfung für AJAX-Requests.
+    Erwartet JSON: {strasse, hausnummer, plz, ort}
+    Antwort: {valid: bool, message: str | null}
+    """
+    data = request.get_json() or {}
+
+    strasse    = data.get("strasse", "") or ""
+    hausnummer = data.get("hausnummer", "") or ""
+    plz        = data.get("plz", "") or ""
+    ort        = data.get("ort", "") or ""
+
+    # Falls etwas Wichtiges fehlt, direkt zurückmelden
+    if not (strasse and hausnummer and plz and ort):
+        return jsonify({
+            "valid": False,
+            "message": "Bitte Straße, Hausnummer, PLZ und Ort vollständig eingeben."
+        }), 200
+
+    ok, msg = check_address_exists(strasse, hausnummer, plz, ort)
+    return jsonify({
+        "valid": bool(ok),
+        "message": msg
+    }), 200
 
 @bp.route("/new", methods=["GET", "POST"])
 def new():
@@ -105,6 +133,19 @@ def new():
             required = ["new_strasse", "new_hausnummer", "new_plz", "new_ort"]
             if any(not getattr(form, f).data for f in required):
                 return render_template("tb/new.html", form=form, error="Bitte alle Felder der Meldeadresse ausfüllen.")
+            
+            # 🔍 Adressvalidierung (Meldeadresse)
+            ok, msg = check_address_exists(
+                form.new_strasse.data,
+                form.new_hausnummer.data,
+                form.new_plz.data,
+                form.new_ort.data,
+            )
+            if not ok:
+                # Fehlermeldung an ein Feld hängen -> dein Accordion-Fehler-JS greift automatisch
+                form.new_strasse.errors.append(msg)
+                return render_template("tb/new.html", form=form)
+            
             adr_melde = Adresse.query.filter_by(
                 strasse=form.new_strasse.data,
                 hausnummer=form.new_hausnummer.data,
@@ -126,6 +167,18 @@ def new():
             required2 = ["auftrag_strasse", "auftrag_hausnummer", "auftrag_plz", "auftrag_ort"]
             if any(not getattr(form, f).data for f in required2):
                 return render_template("tb/new.html", form=form, error="Bitte alle Felder der Auftragsadresse ausfüllen.")
+            
+            # 🔍 Adressvalidierung (Auftragsadresse)
+            ok, msg = check_address_exists(
+                form.auftrag_strasse.data,
+                form.auftrag_hausnummer.data,
+                form.auftrag_plz.data,
+                form.auftrag_ort.data,
+            )
+            if not ok:
+                form.auftrag_strasse.errors.append(msg)
+                return render_template("tb/new.html", form=form)
+            
             adr_auftrag = Adresse.query.filter_by(
                 strasse=form.auftrag_strasse.data,
                 hausnummer=form.auftrag_hausnummer.data,
@@ -178,6 +231,18 @@ def new():
                 req_bi_addr = [form.bi_strasse.data, form.bi_hausnummer.data, form.bi_plz.data, form.bi_ort.data]
                 if any(not v for v in req_bi_addr):
                     return render_template("tb/new.html", form=form, error="Bitte alle Felder der neuen Institutsadresse ausfüllen.")
+                
+                # 🔍 Adressvalidierung (Bestattungsinstitut)
+                ok, msg = check_address_exists(
+                    form.bi_strasse.data,
+                    form.bi_hausnummer.data,
+                    form.bi_plz.data,
+                    form.bi_ort.data,
+                )
+                if not ok:
+                    form.bi_strasse.errors.append(msg)
+                    return render_template("tb/new.html", form=form)
+                
                 bi_addr = Adresse.query.filter_by(
                     strasse=form.bi_strasse.data,
                     hausnummer=form.bi_hausnummer.data,
@@ -242,6 +307,18 @@ def new():
                 req = [f.strasse.data, f.hausnummer.data, f.plz.data, f.ort.data]
                 if any(not v for v in req):
                     return render_template("tb/new.html", form=form, error="Bitte alle Felder der Angehörigenadresse ausfüllen.")
+                
+                # 🔍 Adressvalidierung (Angehörigenadresse)
+                ok, msg = check_address_exists(
+                    f.strasse.data,
+                    f.hausnummer.data,
+                    f.plz.data,
+                    f.ort.data,
+                )
+                if not ok:
+                    f.strasse.errors.append(msg)
+                    return render_template("tb/new.html", form=form)
+                
                 ang_addr = Adresse.query.filter_by(
                     strasse=f.strasse.data,
                     hausnummer=f.hausnummer.data,
@@ -295,6 +372,18 @@ def new():
                 req = [f.beh_strasse.data, f.beh_hausnummer.data, f.beh_plz.data, f.beh_ort.data]
                 if any(not v for v in req):
                     return render_template("tb/new.html", form=form, error="Bitte alle Felder der neuen Behördenadresse ausfüllen.")
+                
+                # 🔍 Adressvalidierung (Behördenadresse)
+                ok, msg = check_address_exists(
+                    f.beh_strasse.data,
+                    f.beh_hausnummer.data,
+                    f.beh_plz.data,
+                    f.beh_ort.data,
+                )
+                if not ok:
+                    f.beh_strasse.errors.append(msg)
+                    return render_template("tb/new.html", form=form)
+                
                 beh_addr = Adresse.query.filter_by(
                     strasse=f.beh_strasse.data,
                     hausnummer=f.beh_hausnummer.data,

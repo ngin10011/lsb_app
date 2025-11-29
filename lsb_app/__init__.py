@@ -37,6 +37,11 @@ def create_app():
     app.config["STARTADRESSE"] = os.getenv("STARTADRESSE", "")
     app.config["ORS_API_KEY"] = os.getenv("ORS_API_KEY", "")
 
+    app.config["NOMINATIM_URL"] = os.getenv("NOMINATIM_URL", "https://nominatim.openstreetmap.org/search")
+    app.config["NOMINATIM_USER_AGENT"] = os.getenv("NOMINATIM_USER_AGENT", "LSBayern/1.0 (info@example.com)")
+
+
+
     # Für Jinja verfügbar machen: {{ config.BANK_IBAN }} usw.
     @app.context_processor
     def inject_config():

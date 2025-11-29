@@ -112,6 +112,14 @@
               </div>
             </div>
             <div class="form-text mt-2">Bitte alle Felder ausfüllen, wenn eine neue Adresse angelegt wird.</div>
+
+            <!-- 🔍 Live-Adressprüfung für Meldeadresse -->
+            <div class="mt-3 d-flex align-items-center gap-2">
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-check-meldeadresse">
+                Adresse prüfen
+              </button>
+              <span id="addr-check-melde-result" class="small text-muted"></span>
+            </div>
           </div>
         </div>
       </div>
@@ -193,6 +201,13 @@
                 {{ form.auftrag_ort.label(class="form-label") }}
                 {{ form.auftrag_ort(class="form-control") }}
               </div>
+            </div>
+            <!-- 🔍 Live-Adressprüfung für Auftragsadresse -->
+            <div class="mt-3 d-flex align-items-center gap-2">
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-check-auftragsadresse">
+                Adresse prüfen
+              </button>
+              <span id="addr-check-auftrag-result" class="small text-muted"></span>
             </div>
           </div>
 
@@ -286,6 +301,15 @@
                   </div>
                 </div>
                 <div class="form-text mt-2">Nur ausfüllen, wenn „Neue Adresse anlegen…“ gewählt wurde.</div>
+                <!-- 🔍 Live-Adressprüfung für Angehörigenadresse -->
+                <div class="mt-3 d-flex align-items-center gap-2">
+                  <button type="button"
+                          class="btn btn-sm btn-outline-secondary btn-check-ang-addr"
+                          data-idx="{{ loop.index0 }}">
+                    Adresse prüfen
+                  </button>
+                  <span id="addr-check-ang-{{ loop.index0 }}" class="small text-muted"></span>
+                </div>
               </div>
             </div>
           {% endfor %}
@@ -363,6 +387,13 @@
                   {{ form.bi_ort(class="form-control") }}
                 </div>
               </div>
+              <!-- 🔍 Live-Adressprüfung für Bestattungsinstitut -->
+              <div class="mt-3 d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-check-bi-adresse">
+                  Adresse prüfen
+                </button>
+                <span id="addr-check-bi-result" class="small text-muted"></span>
+              </div>
             </div>
           </div>
         </div>
@@ -426,27 +457,36 @@
                 </div>
 
                 <div id="box-beh-addr-{{ loop.index0 }}" class="border rounded p-3" style="display:none;">
-                  <div class="row g-2">
-                    <div class="col-md-9">
-                      {{ sub.form.beh_strasse.label(class="form-label") }}
-                      {{ sub.form.beh_strasse(class="form-control") }}
-                    </div>
-                    <div class="col-md-3">
-                      {{ sub.form.beh_hausnummer.label(class="form-label") }}
-                      {{ sub.form.beh_hausnummer(class="form-control") }}
-                    </div>
+                <div class="row g-2">
+                  <div class="col-md-9">
+                    {{ sub.form.beh_strasse.label(class="form-label") }}
+                    {{ sub.form.beh_strasse(class="form-control", id="beh-strasse-{{ loop.index0 }}") }}
                   </div>
-                  <div class="row g-2 mt-2">
-                    <div class="col-md-4">
-                      {{ sub.form.beh_plz.label(class="form-label") }}
-                      {{ sub.form.beh_plz(class="form-control") }}
-                    </div>
-                    <div class="col-md-8">
-                      {{ sub.form.beh_ort.label(class="form-label") }}
-                      {{ sub.form.beh_ort(class="form-control") }}
-                    </div>
+                  <div class="col-md-3">
+                    {{ sub.form.beh_hausnummer.label(class="form-label") }}
+                    {{ sub.form.beh_hausnummer(class="form-control", id="beh-hausnummer-{{ loop.index0 }}") }}
                   </div>
                 </div>
+                <div class="row g-2 mt-2">
+                  <div class="col-md-4">
+                    {{ sub.form.beh_plz.label(class="form-label") }}
+                    {{ sub.form.beh_plz(class="form-control", id="beh-plz-{{ loop.index0 }}") }}
+                  </div>
+                  <div class="col-md-8">
+                    {{ sub.form.beh_ort.label(class="form-label") }}
+                    {{ sub.form.beh_ort(class="form-control", id="beh-ort-{{ loop.index0 }}") }}
+                  </div>
+                </div>
+                <!-- Live-Check-Block hast du schon korrekt -->
+                <div class="mt-3 d-flex align-items-center gap-2">
+                  <button type="button"
+                          class="btn btn-sm btn-outline-secondary btn-check-beh-addr"
+                          data-idx="{{ loop.index0 }}">
+                    Adresse prüfen
+                  </button>
+                  <span id="addr-check-beh-{{ loop.index0 }}" class="small text-muted"></span>
+                </div>
+              </div>
               </div>
             </div>
           {% endfor %}
@@ -561,6 +601,159 @@ document.addEventListener('DOMContentLoaded', function () {
     function toggleAddr(){ (selAddr.value === "-1") ? show(boxAddr) : hide(boxAddr); }
     selAddr.addEventListener('change', toggleAddr); toggleAddr();
   });
+
+  // ===== Live-Adressprüfung (Meldeadresse & Auftragsadresse) =====
+
+  // CSRF-Token aus dem Formular holen (Flask-WTF)
+  const csrfInput = document.querySelector('input[name="csrf_token"]');
+  const csrfToken = csrfInput ? csrfInput.value : null;
+
+  async function validateAddress({ strasse, hausnummer, plz, ort }) {
+    if (!csrfToken) {
+      console.warn("Kein CSRF-Token gefunden, Live-Check deaktiviert.");
+      return { ok: false, message: "Technischer Fehler (kein CSRF-Token)." };
+    }
+
+    try {
+      const resp = await fetch("{{ url_for('tb.api_validate_address') }}", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrfToken
+        },
+        body: JSON.stringify({ strasse, hausnummer, plz, ort })
+      });
+
+      if (!resp.ok) {
+        return { ok: false, message: "Fehler beim Adressdienst." };
+      }
+
+      const data = await resp.json();
+      return {
+        ok: !!data.valid,
+        message: data.message || (data.valid ? "Adresse gültig." : "Adresse ungültig.")
+      };
+    } catch (err) {
+      console.error("Adressprüfung fehlgeschlagen:", err);
+      return { ok: false, message: "Netzwerkfehler bei der Adressprüfung." };
+    }
+  }
+
+  // ---- Button: Meldeadresse prüfen ----
+  const btnMelde = document.getElementById('btn-check-meldeadresse');
+  const outMelde = document.getElementById('addr-check-melde-result');
+
+  if (btnMelde && outMelde) {
+    btnMelde.addEventListener('click', async function () {
+      const strasse    = document.querySelector('input[name="new_strasse"]')?.value || "";
+      const hausnummer = document.querySelector('input[name="new_hausnummer"]')?.value || "";
+      const plz        = document.querySelector('input[name="new_plz"]')?.value || "";
+      const ort        = document.querySelector('input[name="new_ort"]')?.value || "";
+
+      outMelde.className = "small text-muted";
+      outMelde.textContent = "Prüfe Adresse …";
+
+      const { ok, message } = await validateAddress({ strasse, hausnummer, plz, ort });
+
+      if (ok) {
+        outMelde.className = "small text-success";
+      } else {
+        outMelde.className = "small text-danger";
+      }
+      outMelde.textContent = message;
+    });
+  }
+
+  // ---- Button: Auftragsadresse prüfen ----
+  const btnAuftrag = document.getElementById('btn-check-auftragsadresse');
+  const outAuftrag = document.getElementById('addr-check-auftrag-result');
+
+  if (btnAuftrag && outAuftrag) {
+    btnAuftrag.addEventListener('click', async function () {
+      const strasse    = document.querySelector('input[name="auftrag_strasse"]')?.value || "";
+      const hausnummer = document.querySelector('input[name="auftrag_hausnummer"]')?.value || "";
+      const plz        = document.querySelector('input[name="auftrag_plz"]')?.value || "";
+      const ort        = document.querySelector('input[name="auftrag_ort"]')?.value || "";
+
+      outAuftrag.className = "small text-muted";
+      outAuftrag.textContent = "Prüfe Adresse …";
+
+      const { ok, message } = await validateAddress({ strasse, hausnummer, plz, ort });
+
+      if (ok) {
+        outAuftrag.className = "small text-success";
+      } else {
+        outAuftrag.className = "small text-danger";
+      }
+      outAuftrag.textContent = message;
+    });
+  }
+
+  // ---- Buttons: Angehörigenadressen prüfen ----
+  document.querySelectorAll('.btn-check-ang-addr').forEach(function (btn) {
+    const idx = btn.dataset.idx;
+    const out = document.getElementById('addr-check-ang-' + idx);
+
+    btn.addEventListener('click', async function () {
+      const strasse    = document.getElementById('ang-strasse-' + idx)?.value || "";
+      const hausnummer = document.getElementById('ang-hausnummer-' + idx)?.value || "";
+      const plz        = document.getElementById('ang-plz-' + idx)?.value || "";
+      const ort        = document.getElementById('ang-ort-' + idx)?.value || "";
+
+      if (!out) return;
+      out.className = "small text-muted";
+      out.textContent = "Prüfe Adresse …";
+
+      const { ok, message } = await validateAddress({ strasse, hausnummer, plz, ort });
+
+      out.className = "small " + (ok ? "text-success" : "text-danger");
+      out.textContent = message;
+    });
+  });
+
+  // ---- Button: Bestattungsinstitutsadresse prüfen ----
+  const btnBi = document.getElementById('btn-check-bi-adresse');
+  const outBi = document.getElementById('addr-check-bi-result');
+
+  if (btnBi && outBi) {
+    btnBi.addEventListener('click', async function () {
+      const strasse    = document.querySelector('input[name="bi_strasse"]')?.value || "";
+      const hausnummer = document.querySelector('input[name="bi_hausnummer"]')?.value || "";
+      const plz        = document.querySelector('input[name="bi_plz"]')?.value || "";
+      const ort        = document.querySelector('input[name="bi_ort"]')?.value || "";
+
+      outBi.className = "small text-muted";
+      outBi.textContent = "Prüfe Adresse …";
+
+      const { ok, message } = await validateAddress({ strasse, hausnummer, plz, ort });
+
+      outBi.className = "small " + (ok ? "text-success" : "text-danger");
+      outBi.textContent = message;
+    });
+  }
+
+  // ---- Buttons: Behördenadressen prüfen ----
+  document.querySelectorAll('.btn-check-beh-addr').forEach(function (btn) {
+    const idx = btn.dataset.idx;
+    const out = document.getElementById('addr-check-beh-' + idx);
+
+    btn.addEventListener('click', async function () {
+      const strasse    = document.getElementById('beh-strasse-' + idx)?.value || "";
+      const hausnummer = document.getElementById('beh-hausnummer-' + idx)?.value || "";
+      const plz        = document.getElementById('beh-plz-' + idx)?.value || "";
+      const ort        = document.getElementById('beh-ort-' + idx)?.value || "";
+
+      if (!out) return;
+      out.className = "small text-muted";
+      out.textContent = "Prüfe Adresse …";
+
+      const { ok, message } = await validateAddress({ strasse, hausnummer, plz, ort });
+
+      out.className = "small " + (ok ? "text-success" : "text-danger");
+      out.textContent = message;
+    });
+  });
+
 });
 
 document.addEventListener('DOMContentLoaded', function () {
