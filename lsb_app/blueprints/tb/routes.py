@@ -21,6 +21,8 @@ from datetime import date
 import random
 import click
 from lsb_app.blueprints.tb import bp
+import logging
+logger = logging.getLogger(__name__)
 
 def _next_auftragsnummer():
     max_num = db.session.query(func.max(Auftrag.auftragsnummer)).scalar()
@@ -28,6 +30,7 @@ def _next_auftragsnummer():
 
 @bp.route("/new", methods=["GET", "POST"])
 def new():
+    logger.debug("TB.new aufgerufen, Methode=%s", request.method)
     form = TBPatientForm()
 
     # Adress-Choices (bestehende)
@@ -59,6 +62,7 @@ def new():
         form.auftragsnummer.data = _next_auftragsnummer()
     
     if request.method == "POST" and "add_relative" in request.form:
+        logger.info("TB.new: weiterer Angehöriger angefordert")
         form.angehoerige.append_entry()
         # Choices für das neu angehängte Subform setzen:
         new = form.angehoerige[-1].form
@@ -77,6 +81,7 @@ def new():
             form.auftragsnummer.data = _next_auftragsnummer()
     
     if request.method == "POST" and "add_behoerde" in request.form:
+        logger.info("TB.new: weitere Behörde angefordert")
         form.behoerden.append_entry()
         # Choices für das neu angehängte Subform setzen:
         sub = form.behoerden[-1].form
@@ -86,12 +91,15 @@ def new():
         return render_template("tb/new.html", form=form)
 
 
-
     if form.validate_on_submit():
         # --- Meldeadresse bestimmen (wie bisher) ---
         if form.meldeadresse_id.data != -1:
             adr_melde = Adresse.query.get(form.meldeadresse_id.data)
             if not adr_melde:
+                logger.warning(
+                    "TB.new: Meldeadresse mit ID %s nicht gefunden",
+                    form.meldeadresse_id.data,
+                )
                 return render_template("tb/new.html", form=form, error="Meldeadresse nicht gefunden.")
         else:
             required = ["new_strasse", "new_hausnummer", "new_plz", "new_ort"]
@@ -133,6 +141,10 @@ def new():
         else:
             adr_auftrag = Adresse.query.get(sel)
             if not adr_auftrag:
+                logger.warning(
+                    "TB.new: Auftragsadresse mit ID %s nicht gefunden",
+                    sel,
+                )
                 return render_template("tb/new.html", form=form, error="Auftragsadresse nicht gefunden.")
 
         # --- Patient anlegen ---
@@ -193,6 +205,10 @@ def new():
         else:
             bi_obj = Bestattungsinstitut.query.get(bi_sel)
             if not bi_obj:
+                logger.warning(
+                    "TB.new: Bestattungsinstitut mit ID %s nicht gefunden",
+                    bi_sel,
+                )
                 return render_template("tb/new.html", form=form, error="Bestattungsinstitut nicht gefunden.")
 
         # --- Auftrag anlegen ---
@@ -302,12 +318,31 @@ def new():
             a.behoerden.append(b_new)
 
         try:
+            logger.info(
+                "TB.new: bereit zum Commit – Patient neu, geschlecht=%s; Auftrag auftragsnummer=%s, kostenstelle=%s; "
+                "%d Angehörige, %d Behörden",
+                p.geschlecht.name if p.geschlecht else None,
+                a.auftragsnummer,
+                a.kostenstelle.name if a.kostenstelle else None,
+                len(form.angehoerige.entries),
+                len(form.behoerden.entries),
+            )
             db.session.commit()
+            logger.info(
+                "TB.new: Commit erfolgreich – patient_id=%s, auftrag_id=%s",
+                p.id,
+                a.id,
+            )
         except IntegrityError:
             db.session.rollback()
+            logger.warning(
+                "TB.new: IntegrityError bei Commit – vermutlich doppelte Auftragsnummer %s",
+                form.auftragsnummer.data,
+            )
             form.auftragsnummer.errors.append("Auftragsnummer bereits vergeben.")
             return render_template("tb/new.html", form=form)
 
+        logger.info("TB.new: Datensatz erfolgreich angelegt, Redirect auf patients.overview")
         return redirect(url_for("patients.overview"))
 
     # GET oder Validierungsfehler

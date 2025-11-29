@@ -4,6 +4,8 @@ from flask import Flask
 from flask_migrate import Migrate
 from dotenv import load_dotenv
 from lsb_app.extensions import db, csrf
+import logging
+from logging.handlers import RotatingFileHandler
 
 migrate = Migrate(compare_type=True, render_as_batch=True)
 
@@ -76,5 +78,42 @@ def create_app():
     from lsb_app.blueprints.rechnungen import bp as rechnungen_bp
     app.register_blueprint(rechnungen_bp, url_prefix="/rechnungen")
 
+    log_dir = os.path.join(app.instance_path, "logs")
+    os.makedirs(log_dir, exist_ok=True)
+
+    # Logging-Verzeichnis
+    log_dir = os.path.join(app.instance_path, "logs")
+    os.makedirs(log_dir, exist_ok=True)
+
+    formatter = logging.Formatter(
+        "%(asctime)s [%(levelname)s] %(name)s:%(lineno)d %(message)s"
+    )
+
+    file_handler = RotatingFileHandler(
+        os.path.join(log_dir, "app.log"),
+        maxBytes=2 * 1024 * 1024,
+        backupCount=5,
+    )
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(formatter)
+    app.logger.addHandler(file_handler)
+
+    error_handler = RotatingFileHandler(
+        os.path.join(log_dir, "error.log"),
+        maxBytes=2 * 1024 * 1024,
+        backupCount=5,
+    )
+    error_handler.setLevel(logging.ERROR)
+    error_handler.setFormatter(formatter)
+    app.logger.addHandler(error_handler)
+
+    if app.debug:
+        console = logging.StreamHandler()
+        console.setLevel(logging.DEBUG)
+        console.setFormatter(formatter)
+        app.logger.addHandler(console)
+
+    app.logger.setLevel(logging.INFO)
+    app.logger.info("LSB-App initialisiert. Logging aktiv.")
 
     return app

@@ -10,11 +10,15 @@ from pathlib import Path
 from lsb_app.forms import RechnungForm, RechnungCreateForm
 from lsb_app.extensions import db
 from decimal import Decimal
+import logging
+logger = logging.getLogger(__name__)
+
 
 def generate_and_save_rechnung_pdf(rechnung: Rechnung) -> Path:
     """Erzeugt das PDF für eine Rechnung und speichert es im instance-/invoices-Ordner.
        Gibt den Pfad zur Datei zurück.
     """
+    
     auftrag = rechnung.auftrag
 
     # ViewModel auf Basis des Auftrags + Rechnungsdatum der Rechnung
@@ -47,6 +51,7 @@ def generate_and_save_rechnung_pdf(rechnung: Rechnung) -> Path:
 
 @bp.route("/<int:aid>/create", methods=["GET", "POST"])
 def create(aid):
+    logger.debug("Rechnung.create aufgerufen, auftrag_id=%s, method=%s", aid, request.method)
     auftrag = Auftrag.query.get_or_404(aid)
     existing_invoices = auftrag.rechnungen
 
@@ -59,6 +64,12 @@ def create(aid):
             # 1) Höchste Version ermitteln
             max_version = max((r.version for r in auftrag.rechnungen), default=0)
             neue_version = max_version + 1
+            logger.info(
+                "Rechnung.create: berechne neue Version für auftrag_id=%s – max_version=%s, neue_version=%s",
+                auftrag.id,
+                max_version,
+                neue_version,
+            )
 
             # 2) Betrag über das bestehende ViewModel berechnen
             vm = build_rechnung_vm(
@@ -67,6 +78,12 @@ def create(aid):
                 rechnungsdatum=form.rechnungsdatum.data,
             )
             betrag = Decimal(vm.summe_str.replace(",", "."))
+            logger.info(
+                "Rechnung.create: Betrag berechnet für auftrag_id=%s, version=%s – betrag=%s",
+                auftrag.id,
+                neue_version,
+                betrag,
+            )
 
             # 3) Rechnung in der DB anlegen
             rechnung = Rechnung(
@@ -81,17 +98,37 @@ def create(aid):
 
             db.session.add(rechnung)
             db.session.flush() # rechnung.id ist jetzt gesetzt
+            logger.info(
+                "Rechnung.create: Rechnung-Objekt angelegt (noch nicht committet) – rechnung_id=%s, auftrag_id=%s, art=%s, status=%s",
+                rechnung.id,
+                auftrag.id,
+                rechnung.art.name if hasattr(rechnung.art, "name") else rechnung.art,
+                rechnung.status.name if hasattr(rechnung.status, "name") else rechnung.status,
+            )
 
             # 4) PDF erzeugen & speichern (auf Basis der gespeicherten Rechung)
             pdf_path = generate_and_save_rechnung_pdf(rechnung)
-
             rechnung.pdf_path = str(pdf_path)
+            logger.info(
+                "Rechnung.create: PDF erstellt für rechnung_id=%s, version=%s, pfad=%s",
+                rechnung.id,
+                rechnung.version,
+                rechnung.pdf_path,
+            )
 
             db.session.commit()
+            logger.info(
+                "Rechnung.create: Commit erfolgreich – rechnung_id=%s, auftrag_id=%s",
+                rechnung.id,
+                auftrag.id,
+            )
 
         except Exception as e:
             # ➤ Logging für Entwickler
-            current_app.logger.exception("Fehler bei der Rechnungserstellung")
+            logger.exception(
+                "Fehler bei der Rechnungserstellung – auftrag_id=%s",
+                auftrag.id,
+            )
 
             # ➤ DB zurückrollen
             db.session.rollback()
