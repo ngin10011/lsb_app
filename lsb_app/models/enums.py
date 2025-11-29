@@ -29,3 +29,8 @@ class RechnungsadressModus(str, enum.Enum):
     INSTITUT = "INSTITUT"
     INSTITUT_WEITERLEITUNG = "INSTITUT_WEITERLEITUNG"
     ANGEHOERIGE = "ANGEHOERIGE"
+
+class RechnungsStatusEnum(str, enum.Enum):
+    CREATED = "CREATED"
+    SENT = "SENT"
+    CANCELED = "CANCELED"

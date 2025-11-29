@@ -226,6 +226,7 @@
                   <th>Art</th>
                   <th>Rechnungsdatum</th>
                   <th>Betrag</th>
+                  <th>Status</th>
                   <th>Bemerkung</th>
                   <th></th>
                 </tr>
@@ -237,10 +238,11 @@
                   <td>{{ inv.art }}</td>
                   <td>{{ inv.rechnungsdatum }}</td>
                   <td>{{ inv.betrag }}</td>
+                  <td>{{ inv.status }}</td>
                   <td>{{ inv.bemerkung }}</td>
                   <td>          
                     <a class="btn btn-sm btn-outline-primary"
-                    href="#">
+                    href="{{ url_for('rechnungen.edit', rid=inv.id, next=request.full_path) }}">
                     Bearbeiten
                     </a>
                   </td>
@@ -252,6 +254,12 @@
         {% else %}
           <div class="text-muted">Keine Rechnungen erfasst.</div>
         {% endif %}
+        <div class="mt-4">
+            <a class="btn btn-sm btn-outline-primary"
+          href="{{ url_for('rechnungen.create', aid=patient.auftrag.id, next=request.full_path) }}">
+          Rechnung erstellen
+          </a>
+        </div>
       </div>
     </div>
   </div>

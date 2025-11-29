@@ -1,6 +1,6 @@
 # lsb_app/models/__init__.py
 from .enums import (GeschlechtEnum, KostenstelleEnum, AuftragsStatusEnum, RechnungsadressModus,
-                    RechnungsArtEnum)
+                    RechnungsArtEnum, RechnungsStatusEnum)
 from .associations import auftrag_behoerde
 from .patient import Patient
 from .adresse import Adresse
@@ -12,7 +12,7 @@ from .rechnung import Rechnung
 
 __all__ = [
     "GeschlechtEnum", "KostenstelleEnum", "AuftragsStatusEnum",
-    "RechnungsadressModus", "RechnungsArtEnum",
+    "RechnungsadressModus", "RechnungsArtEnum", "RechnungsStatusEnum",
     "auftrag_behoerde",
     "Patient", "Adresse", "Bestattungsinstitut", "Behoerde", "Auftrag", "Angehoeriger",
     "Rechnung"
