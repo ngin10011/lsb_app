@@ -229,6 +229,7 @@
                   <th>Status</th>
                   <th>Bemerkung</th>
                   <th></th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -240,6 +241,13 @@
                   <td>{{ inv.betrag }}</td>
                   <td>{{ inv.status }}</td>
                   <td>{{ inv.bemerkung }}</td>
+                  <td>
+                    <a href="{{ url_for('rechnungen.show_pdf', rid=inv.id) }}"
+                      class="btn btn-sm btn-outline-secondary"
+                      target="_blank">
+                      PDF ansehen
+                    </a>
+                  </td>
                   <td>          
                     <a class="btn btn-sm btn-outline-primary"
                     href="{{ url_for('rechnungen.edit', rid=inv.id, next=request.full_path) }}">
@@ -268,11 +276,5 @@
 
 <div class="mt-4">
   <a href="{{ url_for('patients.overview') }}" class="btn btn-outline-secondary btn-sm">Zur Übersicht</a>
-</div>
-<div class="mt-4">
-    <a class="btn btn-sm btn-outline-primary"
-  href="{{ url_for('rechnungen.rechnung', aid=patient.auftrag.id, next=request.full_path) }}">
-  Rechnung anzeigen
-  </a>
 </div>
 {% endblock %}

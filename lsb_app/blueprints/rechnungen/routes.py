@@ -149,9 +149,9 @@ def create(aid):
             )
 
         # 5) UI-Rückmeldung und Redirect
-        if form.submit_generate.data:
-            flash(f"Rechnung wurde gespeichert und PDF erstellt unter {pdf_path}.", "success")
-            return redirect(url_for("patients.detail", pid=auftrag.patient_id))
+        
+        flash("Rechnung wurde gespeichert und PDF erstellt.", "success")
+        return redirect(url_for("patients.detail", pid=auftrag.patient_id))
         
     max_version = max((r.version for r in existing_invoices), default=0)
     neue_version = max_version + 1
@@ -203,6 +203,46 @@ def edit(rid: int):
                 flash(f"Fehler beim Speichern: {e}", "danger")
 
     return render_template("rechnungen/edit.html", rechnung=inv, form=form)
+
+@bp.get("/<int:rid>/pdf")
+def show_pdf(rid: int):
+    """Bestehendes PDF einer Rechnung anzeigen (ohne es neu zu generieren)."""
+    logger.debug("Rechnung.show_pdf aufgerufen, rechnung_id=%s, method=%s", rid, request.method)
+    rechnung = db.session.get(Rechnung, rid)
+    if not rechnung:
+        abort(404)
+
+    if not rechnung.pdf_path:
+        logger.warning("show_pdf: Rechnung %s hat keinen pdf_path", rid)
+        abort(404)
+
+    file_path = Path(rechnung.pdf_path)
+
+    # Optional: Sicherheit – nur Dateien unter instance/invoices zulassen
+    invoices_dir = Path(current_app.instance_path) / "invoices"
+    try:
+        if not file_path.resolve().is_relative_to(invoices_dir.resolve()):
+            logger.error("show_pdf: pdf_path von Rechnung %s zeigt aus dem invoices-Verzeichnis heraus", rid)
+            abort(403)
+    except AttributeError:
+        # falls Python < 3.9, alternativ mit str.startswith arbeiten
+        if not str(file_path.resolve()).startswith(str(invoices_dir.resolve())):
+            logger.error("show_pdf: pdf_path von Rechnung %s zeigt aus dem invoices-Verzeichnis heraus", rid)
+            abort(403)
+
+    if not file_path.is_file():
+        logger.warning("show_pdf: PDF-Datei für Rechnung %s nicht gefunden (%s)", rid, file_path)
+        abort(404)
+
+    filename = f"Rechnung_{rechnung.auftrag.auftragsnummer}_v{rechnung.version}.pdf"
+
+    return send_file(
+        path_or_file=str(file_path),
+        mimetype="application/pdf",
+        download_name=filename,
+        as_attachment=False,   # im Browser anzeigen
+        max_age=0,
+    )
 
 @bp.get("/<int:aid>")
 def rechnung(aid):
