@@ -85,6 +85,8 @@ def create(aid):
             # 4) PDF erzeugen & speichern (auf Basis der gespeicherten Rechung)
             pdf_path = generate_and_save_rechnung_pdf(rechnung)
 
+            rechnung.pdf_path = str(pdf_path)
+
             db.session.commit()
 
         except Exception as e:
@@ -111,7 +113,7 @@ def create(aid):
 
         # 5) UI-Rückmeldung und Redirect
         if form.submit_generate.data:
-            flash("Rechnung wurde gespeichert und PDF erstellt.", "success")
+            flash(f"Rechnung wurde gespeichert und PDF erstellt unter {pdf_path}.", "success")
             return redirect(url_for("patients.detail", pid=auftrag.patient_id))
         
     max_version = max((r.version for r in existing_invoices), default=0)
