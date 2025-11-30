@@ -111,7 +111,14 @@ def generate_and_save_rechnung_pdf(rechnung: Rechnung) -> Path:
     save_dir = Path(current_app.instance_path) / "invoices"
     save_dir.mkdir(parents=True, exist_ok=True)
 
-    # Dateiname z. B. mit Versionsnummer
+    # Ordnerstruktur nach Jahr/Monat
+    rechnungsdatum = rechnung.rechnungsdatum or date.today()
+    year = str(rechnungsdatum.year)
+    month = f"{rechnungsdatum.month:02d}"
+
+    save_dir = Path(current_app.instance_path) / "invoices" / year / month
+    save_dir.mkdir(parents=True, exist_ok=True)
+
     filename = f"Rechnung_{auftrag.auftragsnummer}_v{rechnung.version}.pdf"
     file_path = save_dir / filename
 
@@ -293,7 +300,6 @@ def send_invoice_email(
     except Exception:
         logger.exception("Fehler beim Speichern der Mail im IMAP-Ordner 'Rechnungen_LS' (IMAP)")
         # Versand war erfolgreich, daher Fehler hier nur loggen
-
 
 @bp.route("/<int:aid>/create", methods=["GET", "POST"])
 def create(aid):
@@ -508,8 +514,11 @@ def rechnung_pdf(aid: int):
 
     # 4) Dateinamen & Speicherort bestimmen
     filename = f"Rechnung_{auftrag.auftragsnummer}.pdf"
-    save_dir = Path(current_app.instance_path) / "invoices"
-    save_dir.mkdir(parents=True, exist_ok=True)
+    rechnungsdatum = date.today()
+    year = str(rechnungsdatum.year)
+    month = f"{rechnungsdatum.month:02d}"
+
+    save_dir = Path(current_app.instance_path) / "invoices" / year / month
     file_path = save_dir / filename
 
     # 5) Speichern
