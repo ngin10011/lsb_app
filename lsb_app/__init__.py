@@ -40,6 +40,19 @@ def create_app():
     app.config["NOMINATIM_URL"] = os.getenv("NOMINATIM_URL", "https://nominatim.openstreetmap.org/search")
     app.config["NOMINATIM_USER_AGENT"] = os.getenv("NOMINATIM_USER_AGENT", "LSBayern/1.0 (info@example.com)")
 
+    # Mail-Konfiguration (SMTP)
+    app.config["MAIL_SERVER"] = os.getenv("MAIL_SERVER", "smtp.mail.de")
+    app.config["MAIL_PORT"] = int(os.getenv("MAIL_PORT", "587"))
+    app.config["MAIL_USE_TLS"] = os.getenv("MAIL_USE_TLS", "1") == "1"
+    app.config["MAIL_USERNAME"] = os.getenv("MAIL_USERNAME", "")
+    app.config["MAIL_PASSWORD"] = os.getenv("MAIL_PASSWORD", "")
+    app.config["MAIL_DEFAULT_SENDER"] = os.getenv("MAIL_DEFAULT_SENDER", app.config["MAIL_USERNAME"])
+    app.config["MAIL_IMAP_SERVER"] = os.getenv("MAIL_IMAP_SERVER", "")
+    app.config["MAIL_IMAP_PORT"] = int(os.getenv("MAIL_IMAP_PORT", "993"))
+    app.config["MAIL_IMAP_FOLDER"] = os.getenv("MAIL_IMAP_FOLDER", "Rechnungen")
+
+
+
 
 
     # Für Jinja verfügbar machen: {{ config.BANK_IBAN }} usw.

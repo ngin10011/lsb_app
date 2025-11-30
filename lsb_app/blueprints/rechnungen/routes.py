@@ -14,6 +14,13 @@ from lsb_app.services.auftrag_filters import ready_for_email_filter
 from lsb_app.forms import RechnungForm, RechnungCreateForm
 from lsb_app.extensions import db
 from decimal import Decimal
+import smtplib
+from email.message import EmailMessage
+import imaplib
+from email.utils import formatdate
+import time
+import mimetypes
+from datetime import datetime
 import logging
 logger = logging.getLogger(__name__)
 
@@ -151,18 +158,101 @@ def determine_email_for_auftrag(auftrag: Auftrag) -> str | None:
 
     return None
 
-def send_invoice_email(rechnung: Rechnung, recipient_email: str) -> None:
+def send_invoice_email(
+    rechnung: Rechnung,
+    recipient_email: str,
+) -> None:
     """
-    Placeholder für E-Mail-Versand.
-    Später hier SMTP/Provider einbauen.
+    Versendet die Rechnung als E-Mail mit PDF-Anhang und legt sie im IMAP-"Sent"-Ordner ab.
+    
+    - SMTP/IMAP-Konfiguration wird aus current_app.config gelesen.
+    - attachment_filename: optionaler Dateiname für den Anhang.
+      Falls None, wird der Dateiname aus rechnung.pdf_path verwendet.
     """
-    logger.info(
-        "Würde E-Mail senden: rechnung_id=%s an %s (pdf_path=%s)",
-        rechnung.id,
-        recipient_email,
-        rechnung.pdf_path,
+
+    cfg = current_app.config
+
+    EMAIL_ADDRESS = cfg.get("MAIL_USERNAME")
+    EMAIL_PASSWORD = cfg.get("MAIL_PASSWORD")
+    SMTP_SERVER = cfg.get("MAIL_SERVER", "smtp.mail.de")
+    SMTP_PORT = int(cfg.get("MAIL_PORT", 465))  # SSL-Port (z. B. 465)
+    IMAP_SERVER = cfg.get("MAIL_IMAP_SERVER", cfg.get("IMAP_SERVER", "imap.mail.de"))
+
+    if not all([EMAIL_ADDRESS, EMAIL_PASSWORD, SMTP_SERVER, SMTP_PORT, IMAP_SERVER]):
+        logger.error("Mail-Konfiguration unvollständig, Versand abgebrochen.")
+        raise RuntimeError("Mail-Konfiguration ist unvollständig.")
+
+    if not rechnung.pdf_path:
+        raise RuntimeError("Rechnung hat keinen pdf_path – PDF muss vorher erzeugt werden.")
+
+    dateipfad = Path(rechnung.pdf_path)
+    if not dateipfad.is_file():
+        raise FileNotFoundError(f"PDF-Datei nicht gefunden: {dateipfad}")
+
+    # --- E-Mail zusammenbauen ---
+    betreff = f"Rechnung {rechnung.auftrag.auftragsnummer} – Leichenschau"
+
+    text = (
+        "Sehr geehrte Damen und Herren,\n\n"
+        "anbei erhalten Sie die Rechnung zur durchgeführten Leichenschau.\n\n"
+        "Mit freundlichen Grüßen\n"
+        f"{cfg.get('COMPANY_NAME', '')}"
     )
-    # TODO: echten E-Mail-Versand implementieren
+
+    filename = f"Rechnung_{rechnung.auftrag.auftragsnummer}.pdf"
+    logger.info(
+        "Starte E-Mail-Versand an %s mit Anhang: %s",
+        recipient_email,
+        filename,
+    )
+
+    msg = EmailMessage()
+    msg["Subject"] = betreff
+    msg["From"] = EMAIL_ADDRESS
+    msg["To"] = recipient_email
+    msg.set_content(text)
+
+    mime_type, _ = mimetypes.guess_type(str(dateipfad))
+    mime_type = mime_type or "application/pdf"
+    main_type, sub_type = mime_type.split("/")
+
+    
+    with dateipfad.open("rb") as f:
+        file_data = f.read()
+        msg.add_attachment(
+            file_data,
+            maintype=main_type,
+            subtype=sub_type,
+            filename=filename,
+        )
+
+    # --- SMTP-Versand (wie in deiner anderen App: SMTP_SSL) ---
+    try:
+        with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT) as smtp:
+            smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            smtp.send_message(msg)
+    except Exception:
+        logger.exception("Fehler beim SMTP-Versand")
+        raise
+
+    # --- IMAP: in "Rechnungen_LS" ablegen (identisch zum bewährten Code) ---
+    try:
+        time.sleep(1)  # kleiner Delay wie in deiner anderen App
+        raw_message = msg.as_bytes()
+
+        with imaplib.IMAP4_SSL(IMAP_SERVER) as imap:
+            imap.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            # imap.append('"Sent"', '\\Seen', imaplib.Time2Internaldate(time.localtime()), raw_message)
+            imap.append('"Rechnungen_LS"', '\\Seen', imaplib.Time2Internaldate(time.localtime()), raw_message)
+
+        logger.info(
+            "E-Mail für Rechnung %s im IMAP-Sent-Ordner gespeichert.",
+            rechnung.id,
+        )
+
+    except Exception:
+        logger.exception("Fehler beim Speichern der Mail im IMAP-Ordner 'Sent' (IMAP)")
+        # Versand war erfolgreich, daher Fehler hier nur loggen
 
 
 @bp.route("/<int:aid>/create", methods=["GET", "POST"])
