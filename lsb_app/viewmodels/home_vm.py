@@ -12,7 +12,7 @@ class HomeVM:
     debug: bool
 
     ready_email_count: int
-    ready_print_count: int
+    print_count: int
     todo_count: int
 
     @property
@@ -20,8 +20,8 @@ class HomeVM:
         return not self.ready_email_count
 
     @property
-    def ready_print_is_zero(self) -> bool:
-        return not self.ready_print_count
+    def print_is_zero(self) -> bool:
+        return not self.print_count
 
     @property
     def todo_is_zero(self) -> bool:

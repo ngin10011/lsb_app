@@ -19,6 +19,7 @@ class AuftragsStatusEnum(str, enum.Enum):
     TODO  = "TODO"
     SENT  = "SENT"
     DONE  = "DONE"
+    PRINT = "PRINT"
 
 class RechnungsArtEnum(str, enum.Enum):
     ERSTRECHNUNG = "Erstrechnung"
