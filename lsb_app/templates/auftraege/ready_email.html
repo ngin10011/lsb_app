@@ -1,32 +1,36 @@
-{# lsb_app/templates/auftraege/ready_email.html #}
 {% extends "base.html" %}
 
-{% block title %}Rechnungen versandbereit (E-Mail){% endblock %}
+{% block title %}Rechnungen – READY per E-Mail{% endblock %}
 
 {% block body %}
 <div class="container py-4">
 
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="h4 mb-0">Rechnungen versandbereit (E-Mail)</h1>
+    <h1 class="h4 mb-0">Aufträge READY – Versand per E-Mail</h1>
 
-    <a href="#"
-        class="btn btn-primary">
-        📧 Alle senden
-    </a>
-    </div>
+    <form method="post"
+            action="{{ url_for('rechnungen.send_batch_email') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-primary"
+                {% if not auftraege %}disabled{% endif %}>
+            📧 Alle senden
+        </button>
+    </form>
 
+  </div>
+
+  <p class="text-muted mb-3">
+    Es werden alle Aufträge angezeigt, die per E-Mail verschickt werden können.
+  </p>
 
   <table class="table table-sm align-middle">
     <thead>
       <tr>
         <th>Auftragsnr.</th>
+        <th>Patient</th>
 
         <th>
-          Patient
-        </th>
-
-        <th>
-          {# Sortierlink für Datum #}
+          {# Sortierlink Datum #}
           {% if sort == 'datum_asc' %}
             <a href="{{ url_for('auftraege.ready_email_list', sort='datum_desc') }}">
               Datum ▲
@@ -43,7 +47,7 @@
         </th>
 
         <th>
-          {# Sortierlink für Kostenstelle #}
+          {# Sortierlink Kostenstelle #}
           {% if sort == 'kostenstelle_asc' %}
             <a href="{{ url_for('auftraege.ready_email_list', sort='kostenstelle_desc') }}">
               Kostenstelle ▲
@@ -60,7 +64,7 @@
         </th>
 
         <th>Bemerkung</th>
-        <th></th>
+        <th class="text-end">Aktion</th>
       </tr>
     </thead>
     <tbody>
@@ -68,23 +72,27 @@
       <tr>
         <td>{{ a.auftragsnummer or '—' }}</td>
         <td>{{ a.patient.name }}, {{ a.patient.vorname }}</td>
-        <td>
-          {{ a.auftragsdatum.strftime('%d.%m.%Y') if a.auftragsdatum else '—' }}
-        </td>
+        <td>{{ a.auftragsdatum.strftime('%d.%m.%Y') if a.auftragsdatum else '—' }}</td>
         <td>{{ a.kostenstelle.value if a.kostenstelle else '—' }}</td>
         <td>{{ a.bemerkung or '' }}</td>
         <td class="text-end">
-        <a href="#"
-            class="btn btn-sm btn-outline-primary">
-            Senden
-        </a>
+            <form method="post"
+                    action="{{ url_for('rechnungen.send_single_email', auftrag_id=a.id) }}"
+                    class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit"
+                        class="btn btn-sm btn-outline-primary">
+                Senden
+                </button>
+            </form>
         </td>
+
       </tr>
       {% endfor %}
 
       {% if not auftraege %}
       <tr>
-        <td colspan="5" class="text-center text-muted">
+        <td colspan="6" class="text-center text-muted">
           Keine passenden Aufträge gefunden.
         </td>
       </tr>

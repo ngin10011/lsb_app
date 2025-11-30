@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Batch-Versand Ergebnis{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+
+  <h1 class="h4 mb-3">Batch-Versand abgeschlossen</h1>
+
+  <p class="mb-3">
+    Erfolgreich gesendet: <strong>{{ successes|length }}</strong><br>
+    Fehlgeschlagen: <strong>{{ failures|length }}</strong>
+  </p>
+
+  {% if successes %}
+  <h2 class="h6 mt-4">Erfolgreich gesendet</h2>
+  <ul class="list-unstyled">
+    {% for a in successes %}
+    <li>
+      Auftrag {{ a.auftragsnummer or a.id }} –
+      {{ a.patient.name }}, {{ a.patient.vorname }}
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  {% if failures %}
+  <h2 class="h6 mt-4 text-danger">Fehler</h2>
+  <ul class="list-unstyled">
+    {% for a, reason in failures %}
+    <li>
+      Auftrag {{ a.auftragsnummer or a.id }} –
+      {{ a.patient.name }}, {{ a.patient.vorname }}:
+      <span class="text-muted">{{ reason }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  <a href="{{ url_for('auftraege.ready_email_list') }}" class="btn btn-secondary mt-3">
+    Zurück zur READY-Liste
+  </a>
+
+</div>
+{% endblock %}

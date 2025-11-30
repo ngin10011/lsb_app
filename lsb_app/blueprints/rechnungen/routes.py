@@ -3,11 +3,14 @@ from flask import (url_for, current_app, render_template, request, flash, send_f
                    redirect, abort)
 from lsb_app.blueprints.rechnungen import bp
 from lsb_app.models import (Rechnung, Auftrag, AuftragsStatusEnum, RechnungsStatusEnum,
-                            RechnungsArtEnum)
+                            RechnungsArtEnum, KostenstelleEnum)
 from lsb_app.services.rechnung_vm_factory import build_rechnung_vm
 from datetime import date
 from weasyprint import HTML
 from pathlib import Path
+from sqlalchemy import and_
+from sqlalchemy.exc import SQLAlchemyError
+from lsb_app.services.auftrag_filters import ready_for_email_filter
 from lsb_app.forms import RechnungForm, RechnungCreateForm
 from lsb_app.extensions import db
 from decimal import Decimal
@@ -56,6 +59,110 @@ def generate_and_save_rechnung_pdf(rechnung: Rechnung) -> Path:
 
     file_path.write_bytes(pdf_bytes)
     return file_path
+
+def create_rechnung_for_auftrag(
+    auftrag: Auftrag,
+    art: RechnungsArtEnum | None = None,
+    rechnungsdatum: date | None = None,
+    bemerkung: str | None = None,
+) -> Rechnung:
+    """
+    Legt IMMER eine neue Rechnung für den Auftrag an:
+    - Version = max(version) + 1
+    - Betrag über build_rechnung_vm
+    - Status = CREATED
+    - PDF wird erzeugt, pdf_path gesetzt
+    -> Gibt die Rechnung zurück (noch nicht committed).
+
+    Später kannst du hier drin die Logik erweitern
+    (z.B. nicht neu erstellen, wenn schon SENT etc.).
+    """
+    if art is None:
+        art = RechnungsArtEnum.ERSTRECHNUNG
+    if rechnungsdatum is None:
+        rechnungsdatum = date.today()
+
+    # 1) Höchste Version ermitteln
+    max_version = max((r.version for r in auftrag.rechnungen), default=0)
+    neue_version = max_version + 1
+    logger.info(
+        "create_rechnung_for_auftrag: neue Version – auftrag_id=%s, version=%s",
+        auftrag.id,
+        neue_version,
+    )
+
+    # 2) Betrag über ViewModel berechnen
+    vm = build_rechnung_vm(
+        auftrag=auftrag,
+        cfg=current_app.config,
+        rechnungsdatum=rechnungsdatum,
+        rechnungsart=art.value,
+    )
+    betrag = Decimal(vm.summe_str.replace(",", "."))
+
+    # 3) Rechnung in der DB anlegen (noch ohne PDF)
+    rechnung = Rechnung(
+        version=neue_version,
+        art=art,
+        rechnungsdatum=rechnungsdatum,
+        bemerkung=bemerkung,
+        betrag=betrag,
+        auftrag=auftrag,
+        status=RechnungsStatusEnum.CREATED,
+    )
+
+    db.session.add(rechnung)
+    db.session.flush()  # rechnung.id ist jetzt gesetzt
+
+    # 4) PDF erzeugen & pfad setzen
+    pdf_path = generate_and_save_rechnung_pdf(rechnung)
+    rechnung.pdf_path = str(pdf_path)
+
+    logger.info(
+        "create_rechnung_for_auftrag: Rechnung erstellt – rechnung_id=%s, pdf_path=%s",
+        rechnung.id,
+        rechnung.pdf_path,
+    )
+
+    return rechnung
+
+def determine_email_for_auftrag(auftrag: Auftrag) -> str | None:
+    """
+    Wählt basierend auf der Kostenstelle die passende E-Mail-Adresse:
+    - BESTATTUNGSINSTITUT -> E-Mail des Instituts
+    - ANGEHOERIGE         -> erste Angehörigen-E-Mail
+    - BEHOERDE            -> erste Behörden-E-Mail
+    """
+    kostenstelle = auftrag.kostenstelle
+
+    if kostenstelle == KostenstelleEnum.BESTATTUNGSINSTITUT:
+        if auftrag.bestattungsinstitut and auftrag.bestattungsinstitut.email:
+            return auftrag.bestattungsinstitut.email
+
+    if kostenstelle == KostenstelleEnum.ANGEHOERIGE and auftrag.patient:
+        for ang in auftrag.patient.angehoerige:
+            if ang.email:
+                return ang.email
+
+    if kostenstelle == KostenstelleEnum.BEHOERDE:
+        for beh in auftrag.behoerden:
+            if beh.email:
+                return beh.email
+
+    return None
+
+def send_invoice_email(rechnung: Rechnung, recipient_email: str) -> None:
+    """
+    Placeholder für E-Mail-Versand.
+    Später hier SMTP/Provider einbauen.
+    """
+    logger.info(
+        "Würde E-Mail senden: rechnung_id=%s an %s (pdf_path=%s)",
+        rechnung.id,
+        recipient_email,
+        rechnung.pdf_path,
+    )
+    # TODO: echten E-Mail-Versand implementieren
 
 
 @bp.route("/<int:aid>/create", methods=["GET", "POST"])
@@ -181,22 +288,6 @@ def edit(rid: int):
 
     form = RechnungForm(obj=inv)
 
-    # if form.validate_on_submit():
-    #     rechnung = Rechnung(
-    #         version=1,  # oder was immer deine Startversion ist
-    #         art=form.art.data,  # ist schon RechnungsArtEnum dank coerce
-    #         status=form.status.data,
-    #         rechnungsdatum=form.rechnungsdatum.data,  # datetime.date
-    #         bemerkung=form.bemerkung.data,  # str oder None
-    #         betrag=Decimal("0.00"),  # TODO: hier später sinnvoll berechnen
-    #         auftrag=inv.auftrag,  # setzt automatisch auftrag_id
-    #     )
-
-    #     db.session.add(rechnung)
-    #     db.session.commit()
-
-    #     flash("Rechnung wurde gespeichert.", "success")
-    #     return redirect(url_for("patients.detail", pid=inv.auftrag.patient_id))
     
     if form.validate_on_submit():
             inv.art=form.art.data  # ist schon RechnungsArtEnum dank coerce
@@ -301,4 +392,97 @@ def rechnung_pdf(aid: int):
         download_name=filename,
         as_attachment=False,
         max_age=0,
+    )
+
+@bp.route("/send-single/<int:auftrag_id>", methods=["POST"])
+def send_single_email(auftrag_id: int):
+    """
+    Verschickt für einen Auftrag eine NEUE Rechnung:
+    - neue Rechnung (immer neue Version) + PDF wird erstellt
+    - passende E-Mail-Adresse wird ermittelt
+    - Versand (Stub)
+    """
+    auftrag = Auftrag.query.get_or_404(auftrag_id)
+
+    # Optional: nur zulassen, wenn Auftrag in der READY-per-Mail-Menge ist
+    if not db.session.query(Auftrag.id).filter(
+        and_(Auftrag.id == auftrag_id, ready_for_email_filter())
+    ).first():
+        flash("Auftrag ist nicht für den E-Mail-Versand READY.", "warning")
+        return redirect(url_for("auftraege.ready_email_list"))
+
+    try:
+        rechnung = create_rechnung_for_auftrag(auftrag)
+
+        recipient = determine_email_for_auftrag(auftrag)
+        if not recipient:
+            flash("Keine gültige E-Mail-Adresse gefunden.", "warning")
+            return redirect(url_for("auftraege.ready_email_list"))
+
+        send_invoice_email(rechnung, recipient)
+
+        # Optional: Status setzen – für später
+        rechnung.status = RechnungsStatusEnum.SENT
+        auftrag.status = AuftragsStatusEnum.SENT
+
+        db.session.commit()
+
+        flash(
+            f"Rechnung v{rechnung.version} für Auftrag #{auftrag.auftragsnummer or auftrag.id} an {recipient} gesendet.",
+            "success",
+        )
+    except Exception as exc:
+        db.session.rollback()
+        logger.exception("Fehler beim Einzelversand für auftrag_id=%s", auftrag.id)
+        flash(f"Fehler beim Versenden der Rechnung: {exc}", "danger")
+
+    return redirect(url_for("auftraege.ready_email_list"))
+
+@bp.route("/send-batch", methods=["POST"])
+def send_batch_email():
+    """
+    Erzeugt für alle READY-per-E-Mail-Aufträge jeweils eine neue Rechnung + PDF
+    und 'versendet' sie (aktuell nur Logging).
+    """
+    auftraege = (
+        db.session.query(Auftrag)
+        .filter(ready_for_email_filter())
+        .order_by(Auftrag.auftragsdatum.asc())
+        .all()
+    )
+
+    successes: list[Auftrag] = []
+    failures: list[tuple[Auftrag, str]] = []
+
+    for a in auftraege:
+        try:
+            rechnung = create_rechnung_for_auftrag(a)
+            recipient = determine_email_for_auftrag(a)
+
+            if not recipient:
+                failures.append((a, "Keine E-Mail-Adresse gefunden"))
+                continue
+
+            send_invoice_email(rechnung, recipient)
+
+            rechnung.status = RechnungsStatusEnum.SENT
+            a.status = AuftragsStatusEnum.SENT
+
+            successes.append(a)
+        except Exception as exc:
+            logger.exception("Fehler beim Versand für Auftrag %s", a.id)
+            failures.append((a, str(exc)))
+
+    try:
+        db.session.commit()
+    except SQLAlchemyError as exc:
+        db.session.rollback()
+        logger.exception("Fehler beim Commit im Batch-Versand")
+        flash(f"Fehler beim Speichern des Versandstatus: {exc}", "danger")
+        return redirect(url_for("auftraege.ready_email_list"))
+
+    return render_template(
+        "rechnungen/send_batch_result.html",
+        successes=successes,
+        failures=failures,
     )
