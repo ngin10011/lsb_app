@@ -13,17 +13,68 @@ from sqlalchemy.exc import SQLAlchemyError
 from lsb_app.services.auftrag_filters import ready_for_email_filter
 from lsb_app.forms import RechnungForm, RechnungCreateForm
 from lsb_app.extensions import db
+from lsb_app.models import Angehoeriger, Bestattungsinstitut, Behoerde, GeschlechtEnum
 from decimal import Decimal
 import smtplib
+from typing import Optional, Tuple, Union
 from email.message import EmailMessage
 import imaplib
 from email.utils import formatdate
 import time
 import mimetypes
-from datetime import datetime
 import logging
 logger = logging.getLogger(__name__)
 
+RecipientModel = Union[Angehoeriger, Bestattungsinstitut, Behoerde]
+
+def determine_recipient_for_auftrag(auftrag: Auftrag) -> tuple[Optional[str], Optional[RecipientModel]]:
+    """
+    Liefert:
+      - die E-Mail-Adresse
+      - das zugehörige Empfänger-Objekt (Angehöriger / Institut / Behörde)
+
+    oder (None, None), wenn nichts gefunden wurde.
+    """
+    kostenstelle = auftrag.kostenstelle
+
+    # Bestattungsinstitut
+    if kostenstelle == KostenstelleEnum.BESTATTUNGSINSTITUT:
+        inst = auftrag.bestattungsinstitut
+        if inst and inst.email:
+            return inst.email, inst
+
+    # Angehörige
+    if kostenstelle == KostenstelleEnum.ANGEHOERIGE and auftrag.patient:
+        for ang in auftrag.patient.angehoerige:
+            if ang.email:
+                return ang.email, ang
+
+    # Behörde
+    if kostenstelle == KostenstelleEnum.BEHOERDE:
+        for beh in auftrag.behoerden:
+            if beh.email:
+                return beh.email, beh
+
+    return None, None
+
+def build_anrede_for_angehoeriger(ang: Angehoeriger) -> str:
+    """
+    Erzeugt so etwas wie ' Frau Müller' oder ' Herr Schmidt'.
+    Passe das an deine Felder im Angehoeriger-Modell an.
+    """
+    # Beispiel: falls du ein GeschlechtEnum oder ein Feld 'anrede' hast:
+    basis = ""
+
+    if getattr(ang, "geschlecht", None) == GeschlechtEnum.WEIBLICH:
+        basis = " Frau"
+    elif getattr(ang, "geschlecht", None) == GeschlechtEnum.MAENNLICH:
+        basis = "r Herr"
+
+    if basis:
+        return f"{basis} {ang.name}"
+    else:
+        # Fallback
+        return f" Damen und Herren"
 
 def generate_and_save_rechnung_pdf(rechnung: Rechnung) -> Path:
     """Erzeugt das PDF für eine Rechnung und speichert es im instance-/invoices-Ordner.
@@ -133,41 +184,14 @@ def create_rechnung_for_auftrag(
 
     return rechnung
 
-def determine_email_for_auftrag(auftrag: Auftrag) -> str | None:
-    """
-    Wählt basierend auf der Kostenstelle die passende E-Mail-Adresse:
-    - BESTATTUNGSINSTITUT -> E-Mail des Instituts
-    - ANGEHOERIGE         -> erste Angehörigen-E-Mail
-    - BEHOERDE            -> erste Behörden-E-Mail
-    """
-    kostenstelle = auftrag.kostenstelle
-
-    if kostenstelle == KostenstelleEnum.BESTATTUNGSINSTITUT:
-        if auftrag.bestattungsinstitut and auftrag.bestattungsinstitut.email:
-            return auftrag.bestattungsinstitut.email
-
-    if kostenstelle == KostenstelleEnum.ANGEHOERIGE and auftrag.patient:
-        for ang in auftrag.patient.angehoerige:
-            if ang.email:
-                return ang.email
-
-    if kostenstelle == KostenstelleEnum.BEHOERDE:
-        for beh in auftrag.behoerden:
-            if beh.email:
-                return beh.email
-
-    return None
-
 def send_invoice_email(
     rechnung: Rechnung,
     recipient_email: str,
+    empfaenger_obj: RecipientModel | None = None,
 ) -> None:
     """
     Versendet die Rechnung als E-Mail mit PDF-Anhang und legt sie im IMAP-"Sent"-Ordner ab.
-    
     - SMTP/IMAP-Konfiguration wird aus current_app.config gelesen.
-    - attachment_filename: optionaler Dateiname für den Anhang.
-      Falls None, wird der Dateiname aus rechnung.pdf_path verwendet.
     """
 
     cfg = current_app.config
@@ -188,16 +212,32 @@ def send_invoice_email(
     dateipfad = Path(rechnung.pdf_path)
     if not dateipfad.is_file():
         raise FileNotFoundError(f"PDF-Datei nicht gefunden: {dateipfad}")
+    
+    is_angehoeriger = isinstance(empfaenger_obj, Angehoeriger)
+    if is_angehoeriger:
+        anrede_angehoerige = build_anrede_for_angehoeriger(empfaenger_obj)
 
-    # --- E-Mail zusammenbauen ---
-    betreff = f"Rechnung {rechnung.auftrag.auftragsnummer} – Leichenschau"
-
-    text = (
-        "Sehr geehrte Damen und Herren,\n\n"
-        "anbei erhalten Sie die Rechnung zur durchgeführten Leichenschau.\n\n"
-        "Beste Grüße\n"
-        f"{cfg.get('COMPANY_NAME', '')}"
-    )
+        betreff = "Leichenschau"
+        text = (
+            f"Sehr geehrte{anrede_angehoerige},\n\n"
+            "zunächst mein herzlichstes Beileid zu dem Todesfall in Ihrem Umfeld.\n\n"
+            "Es tut mir leid, Sie in dieser schweren Zeit mit der Bürokratie belästigen zu müssen.\n"
+            "Ich führte eine Leichenschau zur Ausstellung einer endgültigen Todesbescheinigung durch. "
+            "Da mit dem Eintritt des Todes die Leistungspflicht der Krankenkassen endet, "
+            "sind die Kosten der Leichenschau von den bestattungspflichtigen Angehörigen zu tragen. "
+            "Diese Information können Sie sich gerne von dem für Sie zuständigen Bestattungsunternehmen bestätigen lassen.\n\n"
+            f"Im Anhang finden Sie die Rechnung LS-{rechnung.auftrag.auftragsnummer}.\n\n"
+            "Beste Grüße\n"
+            f"{cfg.get('COMPANY_NAME', '')}"
+        )
+    else:
+        betreff = f"Rechnung LS-{rechnung.auftrag.auftragsnummer} – Leichenschau"
+        text = (
+            "Sehr geehrte Damen und Herren,\n\n"
+            f"anbei erhalten Sie die Rechnung LS-{rechnung.auftrag.auftragsnummer} zur durchgeführten Leichenschau.\n\n"
+            "Beste Grüße\n"
+            f"{cfg.get('COMPANY_NAME', '')}"
+        )
 
     filename = f"Rechnung_{rechnung.auftrag.auftragsnummer}.pdf"
     logger.info(
@@ -246,12 +286,12 @@ def send_invoice_email(
             imap.append('"Rechnungen_LS"', '\\Seen', imaplib.Time2Internaldate(time.localtime()), raw_message)
 
         logger.info(
-            "E-Mail für Rechnung %s im IMAP-Sent-Ordner gespeichert.",
+            "E-Mail für Rechnung %s im IMAP-Ordner 'Rechnungen_LS' gespeichert.",
             rechnung.id,
         )
 
     except Exception:
-        logger.exception("Fehler beim Speichern der Mail im IMAP-Ordner 'Sent' (IMAP)")
+        logger.exception("Fehler beim Speichern der Mail im IMAP-Ordner 'Rechnungen_LS' (IMAP)")
         # Versand war erfolgreich, daher Fehler hier nur loggen
 
 
@@ -504,12 +544,12 @@ def send_single_email(auftrag_id: int):
     try:
         rechnung = create_rechnung_for_auftrag(auftrag)
 
-        recipient = determine_email_for_auftrag(auftrag)
+        recipient, empfaenger_obj = determine_recipient_for_auftrag(auftrag)
         if not recipient:
             flash("Keine gültige E-Mail-Adresse gefunden.", "warning")
             return redirect(url_for("auftraege.ready_email_list"))
 
-        send_invoice_email(rechnung, recipient)
+        send_invoice_email(rechnung, recipient, empfaenger_obj=empfaenger_obj)
 
         # Optional: Status setzen – für später
         rechnung.status = RechnungsStatusEnum.SENT
@@ -548,13 +588,13 @@ def send_batch_email():
     for a in auftraege:
         try:
             rechnung = create_rechnung_for_auftrag(a)
-            recipient = determine_email_for_auftrag(a)
+            recipient, empfaenger_obj = determine_recipient_for_auftrag(a)
 
             if not recipient:
                 failures.append((a, "Keine E-Mail-Adresse gefunden"))
                 continue
 
-            send_invoice_email(rechnung, recipient)
+            send_invoice_email(rechnung, recipient, empfaenger_obj=empfaenger_obj)
 
             rechnung.status = RechnungsStatusEnum.SENT
             rechnung.gesendet_datum = datetime.now()
