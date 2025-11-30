@@ -1,8 +1,9 @@
 /* Dashboard Card Highlighting */
-.border-danger {
-    border: 2px solid #dc3545 !important;
+.border-zero {
+    /* border: 2px solid #dc3545 !important; */
+    border: 2px solid #837c7d !important;
 }
 .card-zero {
     /* background-color: #ffe5e5 !important; */
-    background-color: #dc3545 !important;
+    background-color: #837c7d !important;
 }

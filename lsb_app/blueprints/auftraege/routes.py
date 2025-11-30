@@ -5,6 +5,8 @@ from lsb_app.extensions import db
 from lsb_app.models import Auftrag
 from lsb_app.forms import AuftragForm
 from lsb_app.models.adresse import Adresse
+from lsb_app.services.auftrag_filters import ready_for_email_filter
+from sqlalchemy import asc, desc
 
 @bp.route("/<int:aid>/edit", methods=["GET", "POST"], endpoint="edit")
 def edit(aid: int):
@@ -46,3 +48,30 @@ def edit(aid: int):
             flash(f"Fehler beim Speichern: {e}", "danger")
 
     return render_template("auftraege/edit.html", form=form, auftrag=auftrag)
+
+@bp.route("/ready-email")
+def ready_email_list():
+    # Sortier-Parameter aus der URL lesen, Default: ältestes Datum zuerst
+    sort = request.args.get("sort", "datum_asc")
+
+    if sort == "datum_desc":
+        order_by_clause = [desc(Auftrag.auftragsdatum), asc(Auftrag.id)]
+    elif sort == "kostenstelle_asc":
+        order_by_clause = [asc(Auftrag.kostenstelle), asc(Auftrag.auftragsdatum)]
+    elif sort == "kostenstelle_desc":
+        order_by_clause = [desc(Auftrag.kostenstelle), asc(Auftrag.auftragsdatum)]
+    else:  # "datum_asc" oder alles andere
+        order_by_clause = [asc(Auftrag.auftragsdatum), asc(Auftrag.id)]
+
+    auftraege = (
+        db.session.query(Auftrag)
+        .filter(ready_for_email_filter())
+        .order_by(*order_by_clause)
+        .all()
+    )
+
+    return render_template(
+        "auftraege/ready_email.html",
+        auftraege=auftraege,
+        sort=sort,
+    )

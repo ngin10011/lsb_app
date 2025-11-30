@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 from lsb_app.viewmodels.home_vm import HomeVM
 from lsb_app.models import (AuftragsStatusEnum, KostenstelleEnum,
         Bestattungsinstitut, Angehoeriger, Behoerde, Patient)
+from lsb_app.services.auftrag_filters import ready_for_email_filter
 
 bp = Blueprint("home", __name__)
 
@@ -21,46 +22,10 @@ def index():
     )
 
     ready_email_count = (
-        db.session.query(func.count(Auftrag.id))
-        .filter(Auftrag.status == AuftragsStatusEnum.READY)
-        .filter(
-            or_(
-                # Kostenstelle Bestattungsinstitut + E-Mail im Institut
-                and_(
-                    Auftrag.kostenstelle == KostenstelleEnum.BESTATTUNGSINSTITUT,
-                    Auftrag.bestattungsinstitut.has(
-                        and_(
-                            Bestattungsinstitut.email.isnot(None),
-                            Bestattungsinstitut.email != "",
-                        )
-                    ),
-                ),
-                # Kostenstelle Angehörige + mind. ein Angehöriger mit E-Mail
-                and_(
-                Auftrag.kostenstelle == KostenstelleEnum.ANGEHOERIGE,
-                Auftrag.patient.has(              # 1:1 Auftrag -> Patient
-                    Patient.angehoerige.any(      # 1:n Patient -> Angehörige
-                        and_(
-                            Angehoeriger.email.isnot(None),
-                            Angehoeriger.email != "",
-                        )
-                    )
-                ),
-            ),
-                # Kostenstelle Behörde + mind. eine Behörde mit E-Mail
-                and_(
-                    Auftrag.kostenstelle == KostenstelleEnum.BEHOERDE,
-                    Auftrag.behoerden.any(
-                        and_(
-                            Behoerde.email.isnot(None),
-                            Behoerde.email != "",
-                        )
-                    ),
-                ),
-            )
-        )
-        .scalar()
-    )
+    db.session.query(func.count(Auftrag.id))
+    .filter(ready_for_email_filter())
+    .scalar()
+)
 
     print_count = (
         db.session.query(func.count(Auftrag.id))
