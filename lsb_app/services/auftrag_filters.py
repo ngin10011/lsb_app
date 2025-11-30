@@ -1,6 +1,6 @@
 # lsb_app/services/auftrag_filters.py
 from sqlalchemy import and_, or_
-
+from datetime import date, timedelta
 from lsb_app.extensions import db  # falls du es irgendwann brauchst
 from lsb_app.models.auftrag import Auftrag
 from lsb_app.models.patient import Patient
@@ -16,8 +16,11 @@ def ready_for_email_filter():
     - Status READY haben und
     - abhängig von der Kostenstelle eine zustellbare E-Mail-Adresse besitzen.
     """
+    cutoff_date = date.today() - timedelta(days=3)
+
     return and_(
         Auftrag.status == AuftragsStatusEnum.READY,
+        Auftrag.auftragsdatum <= cutoff_date,
         or_(
             # 1) Kostenstelle = Bestattungsinstitut + E-Mail im Institut
             and_(
