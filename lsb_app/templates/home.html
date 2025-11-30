@@ -1,4 +1,3 @@
-<!-- lsb_app/templates/home.html -->
 {% extends "base.html" %}
 
 {% block title %}Startseite{% endblock %}
@@ -43,7 +42,7 @@
       </a>
     </div>
 
-    {% if config.DEBUG %}
+    {% if vm.debug %}
     <div class="col-sm-6 col-lg-3">
       <a href="{{ url_for('debug.db_overview') }}" class="text-decoration-none">
         <div class="card shadow-sm h-100 border-danger">
@@ -60,6 +59,46 @@
 
   <hr class="my-4">
 
+  <div class="row g-3 mb-4">
+
+    <div class="col-sm-6 col-lg-3">
+      <a href="#" class="text-decoration-none">
+        <div class="card shadow-sm h-100 {{ 'border-danger card-zero' if vm.ready_email_is_zero else '' }}">
+          <div class="card-body text-center py-4">
+            <div class="fs-4 mb-1">📧 READY</div>
+            <div class="display-6">{{ vm.ready_email_count }}</div>
+            <div class="fw-semibold mt-2">Rechnungen zum Verschicken per E-Mail</div>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <a href="#" class="text-decoration-none">
+        <div class="card shadow-sm h-100">
+          <div class="card-body text-center py-4">
+            <div class="fs-4 mb-1">🖨 READY</div>
+            <div class="display-6">{{ vm.ready_print_count }}</div>
+            <div class="fw-semibold mt-2">Rechnungen zum Ausdrucken</div>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-sm-6 col-lg-3">
+      <a href="#" class="text-decoration-none">
+        <div class="card shadow-sm h-100">
+          <div class="card-body text-center py-4">
+            <div class="fs-4 mb-1">📌 TODO</div>
+            <div class="display-6">{{ vm.todo_count }}</div>
+            <div class="fw-semibold mt-2">Aufträge zu bearbeiten</div>
+          </div>
+        </div>
+      </a>
+    </div>
+
+  </div>
+
   <h2 class="h6 mb-3">Letzte Aufträge</h2>
   <table class="table table-sm align-middle">
     <thead>
@@ -72,7 +111,7 @@
       </tr>
     </thead>
     <tbody>
-      {% for a in recent_auftraege %}
+      {% for a in vm.recent_auftraege %}
       <tr>
         <td>{{ a.id }}</td>
         <td>{{ a.patient.name }}, {{ a.patient.vorname }}</td>
@@ -86,8 +125,13 @@
         </td>
       </tr>
       {% endfor %}
-      {% if not recent_auftraege %}
-      <tr><td colspan="5" class="text-center text-muted">Keine Daten vorhanden</td></tr>
+
+      {% if not vm.recent_auftraege %}
+      <tr>
+        <td colspan="5" class="text-center text-muted">
+          Keine Daten vorhanden
+        </td>
+      </tr>
       {% endif %}
     </tbody>
   </table>

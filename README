@@ -1,0 +1,6 @@
+App starten: in lsb_app/lsb_app
+    1) source venv/bin/activate
+    2) flask run
+
+einmaliges Prod-Feeling loka:
+    2) FLASK_DEBUG=0 flask run
