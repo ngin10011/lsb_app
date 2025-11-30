@@ -5,7 +5,7 @@ from lsb_app.blueprints.rechnungen import bp
 from lsb_app.models import (Rechnung, Auftrag, AuftragsStatusEnum, RechnungsStatusEnum,
                             RechnungsArtEnum, KostenstelleEnum)
 from lsb_app.services.rechnung_vm_factory import build_rechnung_vm
-from datetime import date
+from datetime import date, datetime
 from weasyprint import HTML
 from pathlib import Path
 from sqlalchemy import and_
@@ -195,7 +195,7 @@ def send_invoice_email(
     text = (
         "Sehr geehrte Damen und Herren,\n\n"
         "anbei erhalten Sie die Rechnung zur durchgeführten Leichenschau.\n\n"
-        "Mit freundlichen Grüßen\n"
+        "Beste Grüße\n"
         f"{cfg.get('COMPANY_NAME', '')}"
     )
 
@@ -513,6 +513,7 @@ def send_single_email(auftrag_id: int):
 
         # Optional: Status setzen – für später
         rechnung.status = RechnungsStatusEnum.SENT
+        rechnung.gesendet_datum = datetime.now()
         auftrag.status = AuftragsStatusEnum.SENT
 
         db.session.commit()
@@ -556,6 +557,7 @@ def send_batch_email():
             send_invoice_email(rechnung, recipient)
 
             rechnung.status = RechnungsStatusEnum.SENT
+            rechnung.gesendet_datum = datetime.now()
             a.status = AuftragsStatusEnum.SENT
 
             successes.append(a)

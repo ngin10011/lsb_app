@@ -25,6 +25,8 @@ class Rechnung(IDMixin, TimestampMixin, db.Model):
 
     pdf_path = db.Column(db.String(512), nullable=True, index=True)
 
+    gesendet_datum = db.Column(db.DateTime, nullable=True, index=True)
+
     # 1:n Auftrag
     auftrag_id = db.Column(
         db.Integer,
