@@ -9,11 +9,12 @@ from .behoerde import Behoerde
 from .auftrag import Auftrag
 from .angehoeriger import Angehoeriger
 from .rechnung import Rechnung
+from .verlauf import Verlauf
 
 __all__ = [
     "GeschlechtEnum", "KostenstelleEnum", "AuftragsStatusEnum",
     "RechnungsadressModus", "RechnungsArtEnum", "RechnungsStatusEnum",
     "auftrag_behoerde",
     "Patient", "Adresse", "Bestattungsinstitut", "Behoerde", "Auftrag", "Angehoeriger",
-    "Rechnung"
+    "Rechnung", "Verlauf"
 ]

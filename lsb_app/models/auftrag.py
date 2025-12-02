@@ -57,5 +57,14 @@ class Auftrag(IDMixin, TimestampMixin, db.Model):
         lazy="selectin",
     )
 
+    # 1:n
+    verlaeufe = db.relationship(
+        "Verlauf",
+        back_populates="auftrag",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        lazy="selectin",
+    )
+
     def __repr__(self):
         return f"<Auftrag #{self.id} Patient={self.patient_id}>"

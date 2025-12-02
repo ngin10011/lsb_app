@@ -9,10 +9,10 @@ from lsb_app.extensions import db
 try:
     from lsb_app.models import (
         Patient, Adresse, Auftrag, Bestattungsinstitut, Behoerde, Angehoeriger,
-        Rechnung
+        Rechnung, Verlauf
     )
     MODEL_REGISTRY = [Patient, Adresse, Auftrag, Bestattungsinstitut, Behoerde, 
-                      Angehoeriger, Rechnung]
+                      Angehoeriger, Rechnung, Verlauf]
 except Exception:
     # Fallback, wenn noch nicht alles existiert
     from lsb_app import models as _models
