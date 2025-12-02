@@ -14,11 +14,12 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload, selectinload
 from lsb_app.extensions import db
 from lsb_app.models import (Patient, GeschlechtEnum, Adresse, 
-                    Auftrag, KostenstelleEnum, Angehoeriger,
+                    Auftrag, Verlauf, Angehoeriger,
                     Bestattungsinstitut, Behoerde,
                     AuftragsStatusEnum)
 from faker import Faker
 from datetime import date
+from lsb_app.services.verlauf import add_verlauf
 import random
 import click
 from lsb_app.blueprints.tb import bp
@@ -290,6 +291,9 @@ def new():
             patient=p,
         )
         db.session.add(a) 
+
+        # --- ersten Verlaufseintrag anlegen ---
+        add_verlauf(a, f"TB-Auftrag angelegt", datum=date.today())
 
         # --- Mehrere Angehörige anlegen ---
         for sub in form.angehoerige.entries:

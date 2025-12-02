@@ -19,6 +19,7 @@ import smtplib
 from typing import Optional, Tuple, Union
 from email.message import EmailMessage
 import imaplib
+from lsb_app.services.verlauf import add_verlauf
 from email.utils import formatdate
 import time
 import mimetypes
@@ -369,12 +370,15 @@ def create(aid):
                 rechnung.pdf_path,
             )
 
+            add_verlauf(auftrag, f"Rechnung Version {rechnung.version} erstellt")
+
             db.session.commit()
             logger.info(
                 "Rechnung.create: Commit erfolgreich – rechnung_id=%s, auftrag_id=%s",
                 rechnung.id,
                 auftrag.id,
             )
+            
 
         except Exception as e:
             # ➤ Logging für Entwickler
@@ -564,6 +568,7 @@ def send_single_email(auftrag_id: int):
         rechnung.status = RechnungsStatusEnum.SENT
         rechnung.gesendet_datum = datetime.now()
         auftrag.status = AuftragsStatusEnum.SENT
+        add_verlauf(auftrag, f"Rechnung Version {rechnung.version} verschickt")
 
         db.session.commit()
 
@@ -608,6 +613,7 @@ def send_batch_email():
             rechnung.status = RechnungsStatusEnum.SENT
             rechnung.gesendet_datum = datetime.now()
             a.status = AuftragsStatusEnum.SENT
+            add_verlauf(a, f"Rechnung Version {rechnung.version} verschickt")
 
             successes.append(a)
         except Exception as exc:

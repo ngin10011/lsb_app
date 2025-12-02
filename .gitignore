@@ -17,6 +17,7 @@ venv/
 *.db
 *.sqlite
 *.sqlite3
+.flaskenv
 
 # --- Flask-Migrate / Alembic ---
 migrations/__pycache__/

@@ -272,6 +272,44 @@
     </div>
   </div>
 
+  <!-- Verlauf (1:n) -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <h2 class="h6 mb-3">Verlauf</h2>
+        {% if patient.auftrag and patient.auftrag.verlaeufe %}
+          <div class="table-responsive">
+            <table class="table table-sm table-striped align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Datum</th>
+                  <th>Ereignis</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for ver in patient.auftrag.verlaeufe %}
+                <tr>
+                  <td>{{ ver.datum }}</td>
+                  <td>{{ ver.ereignis }}</td>
+                  <td>          
+                    <a class="btn btn-sm btn-outline-primary"
+                    href="#">
+                    Bearbeiten
+                    </a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="text-muted">Kein Verlauf erfasst.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <div class="mt-4">
