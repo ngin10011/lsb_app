@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 from lsb_app.extensions import db, csrf
 import logging
 from logging.handlers import RotatingFileHandler
+from cli import register_cli
+
 
 migrate = Migrate(compare_type=True, render_as_batch=True)
 
@@ -133,5 +135,8 @@ def create_app():
 
     app.logger.setLevel(logging.INFO)
     app.logger.info("LSB-App initialisiert. Logging aktiv.")
+
+    # CLI-Kommandos (z. B. flask dev-reset)
+    register_cli(app)
 
     return app

@@ -552,7 +552,7 @@ def send_single_email(auftrag_id: int):
         and_(Auftrag.id == auftrag_id, ready_for_email_filter())
     ).first():
         flash("Auftrag ist nicht für den E-Mail-Versand READY.", "warning")
-        return redirect(url_for("auftraege.ready_email_list"))
+        return redirect(url_for("rechnungen.send_batch_email"))
 
     try:
         rechnung = create_rechnung_for_auftrag(auftrag)
@@ -560,7 +560,7 @@ def send_single_email(auftrag_id: int):
         recipient, empfaenger_obj = determine_recipient_for_auftrag(auftrag)
         if not recipient:
             flash("Keine gültige E-Mail-Adresse gefunden.", "warning")
-            return redirect(url_for("auftraege.ready_email_list"))
+            return redirect(url_for("rechnungen.send_batch_email"))
 
         send_invoice_email(rechnung, recipient, empfaenger_obj=empfaenger_obj)
 
@@ -581,7 +581,7 @@ def send_single_email(auftrag_id: int):
         logger.exception("Fehler beim Einzelversand für auftrag_id=%s", auftrag.id)
         flash(f"Fehler beim Versenden der Rechnung: {exc}", "danger")
 
-    return redirect(url_for("auftraege.ready_email_list"))
+    return redirect(url_for("rechnungen.send_batch_email"))
 
 @bp.route("/send-batch", methods=["GET", "POST"])
 def send_batch_email():
@@ -598,7 +598,7 @@ def send_batch_email():
 
         if not auftraege:
             flash("Es sind keine Aufträge für den E-Mail-Versand READY.", "info")
-            return redirect(url_for("auftraege.ready_email_list"))
+            return redirect(url_for("home.index"))
 
         # 2) Auswahl-Seite anzeigen
         return render_template(
@@ -614,13 +614,13 @@ def send_batch_email():
     id_strings = request.form.getlist("auftrag_ids")  # Name wie im Template
     if not id_strings:
         flash("Sie haben keinen Auftrag ausgewählt.", "warning")
-        return redirect(url_for("auftraege.ready_email_list"))
+        return redirect(url_for("rechnungen.send_batch_email"))
 
     try:
         selected_ids = [int(x) for x in id_strings]
     except ValueError:
         flash("Ungültige Auswahl.", "danger")
-        return redirect(url_for("auftraege.ready_email_list"))
+        return redirect(url_for("rechnungen.send_batch_email"))
 
     # Nur die ausgewählten + weiterhin READY
     auftraege = (
@@ -674,7 +674,7 @@ def send_batch_email():
         db.session.rollback()
         logger.exception("Fehler beim Commit im Batch-Versand")
         flash(f"Fehler beim Speichern des Versandstatus: {exc}", "danger")
-        return redirect(url_for("auftraege.ready_email_list"))
+        return redirect(url_for("rechnungen.send_batch_email"))
 
     return render_template(
         "rechnungen/send_batch_result.html",
