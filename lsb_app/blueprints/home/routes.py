@@ -7,7 +7,7 @@ from sqlalchemy.orm import selectinload
 from lsb_app.viewmodels.home_vm import HomeVM
 from lsb_app.models import (AuftragsStatusEnum, KostenstelleEnum,
         Bestattungsinstitut, Angehoeriger, Behoerde, Patient)
-from lsb_app.services.auftrag_filters import ready_for_email_filter
+from lsb_app.services.auftrag_filters import ready_for_email_filter, ready_for_inquiry_filter
 
 bp = Blueprint("home", __name__)
 
@@ -25,7 +25,7 @@ def index():
     db.session.query(func.count(Auftrag.id))
     .filter(ready_for_email_filter())
     .scalar()
-)
+    )
 
     print_count = (
         db.session.query(func.count(Auftrag.id))
@@ -39,11 +39,18 @@ def index():
         .scalar()
     )
 
+    inquiry_count = (
+        db.session.query(func.count(Auftrag.id))
+        .filter(ready_for_inquiry_filter())
+        .scalar()
+    )
+
     vm = HomeVM(
         recent_auftraege=recent_auftraege,
         ready_email_count=ready_email_count,
         print_count=print_count,
         todo_count=todo_count,
+        inquiry_count=inquiry_count,
         debug=current_app.debug, 
         )
     return render_template("home.html", vm=vm)

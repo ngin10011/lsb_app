@@ -14,6 +14,7 @@ class HomeVM:
     ready_email_count: int
     print_count: int
     todo_count: int
+    inquiry_count: int
 
     @property
     def ready_email_is_zero(self) -> bool:
@@ -26,3 +27,7 @@ class HomeVM:
     @property
     def todo_is_zero(self) -> bool:
         return not self.todo_count 
+    
+    @property
+    def inquiry_is_zero(self) -> bool:
+        return not self.inquiry_count

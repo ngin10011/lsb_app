@@ -56,3 +56,12 @@ def ready_for_email_filter():
             ),
         ),
     )
+
+def ready_for_inquiry_filter():
+
+    cutoff_date = date.today() - timedelta(days=3)
+
+    return and_(
+        Auftrag.status == AuftragsStatusEnum.INQUIRY,
+        Auftrag.auftragsdatum <= cutoff_date,
+    )
