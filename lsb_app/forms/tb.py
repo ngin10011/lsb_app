@@ -90,6 +90,16 @@ class TBPatientForm(PatientForm):
     auftrag_ort        = StringField("Ort",        validators=[Optional(), Length(max=120)], filters=[strip_or_none])
 
     # Angehörige
+    has_relatives = SelectField(
+        "Angehörige",
+        choices=[
+            ("none", "Keine Angehörigen angeben"),
+            ("some", "Angehörige hinzufügen"),
+        ],
+        default="none",
+        validators=[Optional()],
+    )
+
     angehoerige = FieldList(FormField(AngehoerigerMiniForm), min_entries=1, max_entries=10)
     add_relative = SubmitField("Weiteren Angehörigen hinzufügen")
 
@@ -191,55 +201,87 @@ class TBPatientForm(PatientForm):
                 ok = False
 
         # Angehörige: allgemeine Prüfung
-        for sub in self.angehoerige.entries:
-            f = sub.form
-            any_person_field = any([
-                f.name.data, f.vorname.data, f.verwandtschaftsgrad.data,
-                f.telefonnummer.data, f.email.data
-            ])
-            if not any_person_field:
-                continue
-            if f.adresse_choice.data in (None, 0):
-                f.adresse_choice.errors.append("Bitte eine Adresse auswählen.")
-                ok = False
-            if f.adresse_choice.data == -1:
-                for fld in (f.strasse, f.hausnummer, f.plz, f.ort):
-                    if not fld.data:
-                        fld.errors.append("Erforderlich.")
-                        ok = False
+
+        if self.has_relatives.data == "some" or ks == KostenstelleEnum.ANGEHOERIGE:
+            for sub in self.angehoerige.entries:
+                f = sub.form
+                any_person_field = any([
+                    f.name.data, f.vorname.data, f.verwandtschaftsgrad.data,
+                    f.telefonnummer.data, f.email.data
+                ])
+                # komplett leere Zeilen ignorieren
+                if not any_person_field:
+                    continue
+
+                if f.adresse_choice.data in (None, 0):
+                    f.adresse_choice.errors.append("Bitte eine Adresse auswählen.")
+                    ok = False
+
+                if f.adresse_choice.data == -1:
+                    for fld in (f.strasse, f.hausnummer, f.plz, f.ort):
+                        if not fld.data:
+                            fld.errors.append("Erforderlich.")
+                            ok = False
 
         # Fall C: Kostenstelle = Angehörige
         if ks == KostenstelleEnum.ANGEHOERIGE:
+            # Nutzer darf hier nicht "keine Angehörigen" wählen
+            if self.has_relatives.data != "some":
+                self.has_relatives.errors.append(
+                    "Bei Kostenstelle „Angehörige“ müssen Angehörige hinzugefügt werden."
+                )
+                ok = False
+
             any_valid_relative = False
+
             for sub in self.angehoerige.entries:
                 f = sub.form
+
+                any_person_field = any([
+                    f.name.data, f.vorname.data, f.verwandtschaftsgrad.data,
+                    f.telefonnummer.data, f.email.data
+                ])
+                if not any_person_field:
+                    continue  # komplett leere Zeile ignorieren
+
                 choice = f.adresse_choice.data
-                if choice in (-2, -4):
+
+                if choice in (-2, -4):  # wie Melde / wie Auftrag
                     any_valid_relative = True
                     continue
-                if choice == -1:
+
+                if choice == -1:  # neue Adresse
                     missing = []
                     for fld in (f.strasse, f.hausnummer, f.plz, f.ort):
                         if not fld.data:
                             fld.errors.append("Erforderlich.")
                             missing.append(fld)
                     if missing:
-                        f.adresse_choice.errors.append("Bitte neue Adresse vollständig angeben.")
+                        f.adresse_choice.errors.append(
+                            "Bitte neue Adresse vollständig angeben."
+                        )
                         ok = False
                     else:
                         any_valid_relative = True
                     continue
+
                 if choice in (0, -3, None):
                     f.adresse_choice.errors.append(
                         "Bitte „Wie Meldeadresse“, „Wie Auftragsadresse“ oder „Neue Adresse anlegen…“ wählen."
                     )
                     ok = False
 
-            if not any_valid_relative and self.angehoerige.entries:
-                first = self.angehoerige.entries[0].form
-                first.adresse_choice.errors.append(
-                    "Bei Kostenstelle „Angehörige“ muss mindestens ein Angehöriger mit gültiger Adresse angegeben werden."
-                )
+            if not any_valid_relative:
+                if self.angehoerige.entries:
+                    first = self.angehoerige.entries[0].form
+                    first.adresse_choice.errors.append(
+                        "Bei Kostenstelle „Angehörige“ muss mindestens ein Angehöriger mit gültiger Adresse angegeben werden."
+                    )
+                else:
+                    # falls noch gar kein Eintrag existiert
+                    self.has_relatives.errors.append(
+                        "Bitte mindestens einen Angehörigen anlegen."
+                    )
                 ok = False
 
         return ok

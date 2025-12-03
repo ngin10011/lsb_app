@@ -223,96 +223,117 @@
     <!-- Angehörige -->
     <div class="accordion-item">
       <h2 class="accordion-header" id="h-ang">
-        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-ang" aria-expanded="false" aria-controls="c-ang">
-          4) Angehörige (optional)
+        <button class="accordion-button collapsed" type="button"
+                data-bs-toggle="collapse" data-bs-target="#c-ang"
+                aria-expanded="false" aria-controls="c-ang">
+          4) Angehörige (optional, mehrere)
         </button>
       </h2>
-      <div id="c-ang" class="accordion-collapse collapse" aria-labelledby="h-ang" data-bs-parent="#tbAccordion">
+      <div id="c-ang" class="accordion-collapse collapse"
+           aria-labelledby="h-ang" data-bs-parent="#tbAccordion">
         <div class="accordion-body">
-          <div class="d-flex justify-content-end mb-2">
-            {{ form.add_relative(class="btn btn-sm btn-outline-primary") }}
+
+          <div class="row g-3 align-items-end mb-3">
+            <div class="col-md-6">
+              {{ form.has_relatives.label(class="form-label") }}
+              {{ form.has_relatives(class="form-select", id="sel-has-relatives") }}
+              {% for e in form.has_relatives.errors %}
+                <div class="text-danger small">{{ e }}</div>
+              {% endfor %}
+            </div>
           </div>
 
-          {% for sub in form.angehoerige %}
-            <div class="border rounded p-3 mb-3">
-              <div class="row g-3">
-                <div class="col-md-4">
-                  {{ sub.form.name.label(class="form-label") }}
-                  {{ sub.form.name(class="form-control") }}
-                </div>
-                <div class="col-md-4">
-                  {{ sub.form.vorname.label(class="form-label") }}
-                  {{ sub.form.vorname(class="form-control") }}
-                </div>
-                <div class="col-md-4">
-                  {{ sub.form.geschlecht.label(class="form-label") }}
-                  {{ sub.form.geschlecht(class="form-select") }}
-                </div>
-
-                <div class="col-md-4">
-                  {{ sub.form.verwandtschaftsgrad.label(class="form-label") }}
-                  {{ sub.form.verwandtschaftsgrad(class="form-control") }}
-                </div>
-                <div class="col-md-4">
-                  {{ sub.form.telefonnummer.label(class="form-label") }}
-                  {{ sub.form.telefonnummer(class="form-control") }}
-                </div>
-                <div class="col-md-4">
-                  {{ sub.form.email.label(class="form-label") }}
-                  {{ sub.form.email(class="form-control") }}
-                </div>
-              </div>
-
-              <hr class="my-3">
-
-              {# Adresse-Auswahl je Angehöriger #}
-              <div class="mb-2">
-                {{ sub.form.adresse_choice.label(class="form-label") }}
-                {{ sub.form.adresse_choice(
-                    class="form-select js-ang-addr-select",
-                    id="sel-ang-addr-{{ loop.index0 }}",
-                    **{"data-idx": loop.index0}
-                ) }}
-                {% for e in sub.form.adresse_choice.errors %}
-                  <div class="invalid-feedback d-block">{{ e }}</div>
-                {% endfor %}
-              </div>
-
-              {# Eingabefelder für "Neue Adresse anlegen…" #}
-              <div id="box-ang-addr-{{ loop.index0 }}" class="border rounded p-3" style="display:none;">
-                <div class="row g-2">
-                  <div class="col-md-9">
-                    {{ sub.form.strasse.label(class="form-label") }}
-                    {{ sub.form.strasse(class="form-control", id="ang-strasse-{{ loop.index0 }}") }}
-                  </div>
-                  <div class="col-md-3">
-                    {{ sub.form.hausnummer.label(class="form-label") }}
-                    {{ sub.form.hausnummer(class="form-control", id="ang-hausnummer-{{ loop.index0 }}") }}
-                  </div>
-                </div>
-                <div class="row g-2 mt-2">
-                  <div class="col-md-4">
-                    {{ sub.form.plz.label(class="form-label") }}
-                    {{ sub.form.plz(class="form-control", id="ang-plz-{{ loop.index0 }}") }}
-                  </div>
-                  <div class="col-md-8">
-                    {{ sub.form.ort.label(class="form-label") }}
-                    {{ sub.form.ort(class="form-control", id="ang-ort-{{ loop.index0 }}") }}
-                  </div>
-                </div>
-                <div class="form-text mt-2">Nur ausfüllen, wenn „Neue Adresse anlegen…“ gewählt wurde.</div>
-                <!-- 🔍 Live-Adressprüfung für Angehörigenadresse -->
-                <div class="mt-3 d-flex align-items-center gap-2">
-                  <button type="button"
-                          class="btn btn-sm btn-outline-secondary btn-check-ang-addr"
-                          data-idx="{{ loop.index0 }}">
-                    Adresse prüfen
-                  </button>
-                  <span id="addr-check-ang-{{ loop.index0 }}" class="small text-muted"></span>
-                </div>
-              </div>
+          <div id="ang-block">
+            <div class="d-flex justify-content-end mb-2">
+              {{ form.add_relative(class="btn btn-sm btn-outline-primary") }}
             </div>
-          {% endfor %}
+
+            {% for sub in form.angehoerige %}
+              <div class="border rounded p-3 mb-3">
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    {{ sub.form.name.label(class="form-label") }}
+                    {{ sub.form.name(class="form-control") }}
+                  </div>
+                  <div class="col-md-4">
+                    {{ sub.form.vorname.label(class="form-label") }}
+                    {{ sub.form.vorname(class="form-control") }}
+                  </div>
+                  <div class="col-md-4">
+                    {{ sub.form.geschlecht.label(class="form-label") }}
+                    {{ sub.form.geschlecht(class="form-select") }}
+                  </div>
+
+                  <div class="col-md-4">
+                    {{ sub.form.verwandtschaftsgrad.label(class="form-label") }}
+                    {{ sub.form.verwandtschaftsgrad(class="form-control") }}
+                  </div>
+                  <div class="col-md-4">
+                    {{ sub.form.telefonnummer.label(class="form-label") }}
+                    {{ sub.form.telefonnummer(class="form-control") }}
+                  </div>
+                  <div class="col-md-4">
+                    {{ sub.form.email.label(class="form-label") }}
+                    {{ sub.form.email(class="form-control") }}
+                  </div>
+                </div>
+
+                <hr class="my-3">
+
+                {# Adresse-Auswahl je Angehöriger #}
+                <div class="mb-2">
+                  {{ sub.form.adresse_choice.label(class="form-label") }}
+                  {{ sub.form.adresse_choice(
+                      class="form-select js-ang-addr-select",
+                      id="sel-ang-addr-{{ loop.index0 }}",
+                      **{"data-idx": loop.index0}
+                  ) }}
+                  {% for e in sub.form.adresse_choice.errors %}
+                    <div class="invalid-feedback d-block">{{ e }}</div>
+                  {% endfor %}
+                </div>
+
+                {# Eingabefelder für "Neue Adresse anlegen…" #}
+                <div id="box-ang-addr-{{ loop.index0 }}"
+                     class="border rounded p-3"
+                     style="display:none;">
+                  <div class="row g-2">
+                    <div class="col-md-9">
+                      {{ sub.form.strasse.label(class="form-label") }}
+                      {{ sub.form.strasse(class="form-control", id="ang-strasse-{{ loop.index0 }}") }}
+                    </div>
+                    <div class="col-md-3">
+                      {{ sub.form.hausnummer.label(class="form-label") }}
+                      {{ sub.form.hausnummer(class="form-control", id="ang-hausnummer-{{ loop.index0 }}") }}
+                    </div>
+                  </div>
+                  <div class="row g-2 mt-2">
+                    <div class="col-md-4">
+                      {{ sub.form.plz.label(class="form-label") }}
+                      {{ sub.form.plz(class="form-control", id="ang-plz-{{ loop.index0 }}") }}
+                    </div>
+                    <div class="col-md-8">
+                      {{ sub.form.ort.label(class="form-label") }}
+                      {{ sub.form.ort(class="form-control", id="ang-ort-{{ loop.index0 }}") }}
+                    </div>
+                  </div>
+                  <div class="form-text mt-2">
+                    Nur ausfüllen, wenn „Neue Adresse anlegen…“ gewählt wurde.
+                  </div>
+                  <!-- 🔍 Live-Adressprüfung für Angehörigenadresse -->
+                  <div class="mt-3 d-flex align-items-center gap-2">
+                    <button type="button"
+                            class="btn btn-sm btn-outline-secondary btn-check-ang-addr"
+                            data-idx="{{ loop.index0 }}">
+                      Adresse prüfen
+                    </button>
+                    <span id="addr-check-ang-{{ loop.index0 }}" class="small text-muted"></span>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+
         </div>
       </div>
     </div>
@@ -753,6 +774,24 @@ document.addEventListener('DOMContentLoaded', function () {
       out.textContent = message;
     });
   });
+
+  // ===== Angehörige ein-/ausblenden über has_relatives =====
+  (function () {
+    const sel = document.getElementById('sel-has-relatives');
+    const block = document.getElementById('ang-block');
+    if (!sel || !block) return;
+
+    function toggleAng() {
+      if (sel.value === 'some') {
+        block.style.display = '';
+      } else {
+        block.style.display = 'none';
+      }
+    }
+
+    sel.addEventListener('change', toggleAng);
+    toggleAng();  // Initialzustand bei GET/POST
+  })();
 
 });
 

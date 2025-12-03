@@ -91,6 +91,7 @@ def new():
         form.auftragsnummer.data = _next_auftragsnummer()
     
     if request.method == "POST" and "add_relative" in request.form:
+        form.has_relatives.data = "some"
         logger.info("TB.new: weiterer Angehöriger angefordert")
         form.angehoerige.append_entry()
         # Choices für das neu angehängte Subform setzen:
@@ -296,59 +297,64 @@ def new():
         add_verlauf(a, f"TB-Auftrag angelegt", datum=date.today())
 
         # --- Mehrere Angehörige anlegen ---
-        for sub in form.angehoerige.entries:
-            f = sub.form
-            if not (f.name.data and f.vorname.data):
-                continue  # leere Zeilen ignorieren
+        if form.has_relatives.data == "some":
+            for sub in form.angehoerige.entries:
+                f = sub.form
+                any_person_field = any([
+                    f.name.data, f.vorname.data, f.verwandtschaftsgrad.data,
+                    f.telefonnummer.data, f.email.data
+                ])
+                if not any_person_field:
+                    continue
 
-            # Adresse je Angehöriger
-            choice = f.adresse_choice.data
-            if choice == -2:       # wie Melde
-                ang_addr = adr_melde
-            elif choice == -4:     # wie Auftrag
-                ang_addr = adr_auftrag
-            elif choice == -1:     # neu
-                req = [f.strasse.data, f.hausnummer.data, f.plz.data, f.ort.data]
-                if any(not v for v in req):
-                    return render_template("tb/new.html", form=form, error="Bitte alle Felder der Angehörigenadresse ausfüllen.")
-                
-                # 🔍 Adressvalidierung (Angehörigenadresse)
-                ok, msg = check_address_exists(
-                    f.strasse.data,
-                    f.hausnummer.data,
-                    f.plz.data,
-                    f.ort.data,
-                )
-                if not ok:
-                    f.strasse.errors.append(msg)
-                    return render_template("tb/new.html", form=form)
-                
-                ang_addr = Adresse.query.filter_by(
-                    strasse=f.strasse.data,
-                    hausnummer=f.hausnummer.data,
-                    plz=f.plz.data,
-                    ort=f.ort.data,
-                ).first() or Adresse(
-                    strasse=f.strasse.data,
-                    hausnummer=f.hausnummer.data,
-                    plz=f.plz.data,
-                    ort=f.ort.data,
-                )
-                db.session.add(ang_addr); db.session.flush()
-            else:                  # -3 = unbekannt
-                ang_addr = None
+                # Adresse je Angehöriger
+                choice = f.adresse_choice.data
+                if choice == -2:       # wie Melde
+                    ang_addr = adr_melde
+                elif choice == -4:     # wie Auftrag
+                    ang_addr = adr_auftrag
+                elif choice == -1:     # neu
+                    req = [f.strasse.data, f.hausnummer.data, f.plz.data, f.ort.data]
+                    if any(not v for v in req):
+                        return render_template("tb/new.html", form=form, error="Bitte alle Felder der Angehörigenadresse ausfüllen.")
+                    
+                    # 🔍 Adressvalidierung (Angehörigenadresse)
+                    ok, msg = check_address_exists(
+                        f.strasse.data,
+                        f.hausnummer.data,
+                        f.plz.data,
+                        f.ort.data,
+                    )
+                    if not ok:
+                        f.strasse.errors.append(msg)
+                        return render_template("tb/new.html", form=form)
+                    
+                    ang_addr = Adresse.query.filter_by(
+                        strasse=f.strasse.data,
+                        hausnummer=f.hausnummer.data,
+                        plz=f.plz.data,
+                        ort=f.ort.data,
+                    ).first() or Adresse(
+                        strasse=f.strasse.data,
+                        hausnummer=f.hausnummer.data,
+                        plz=f.plz.data,
+                        ort=f.ort.data,
+                    )
+                    db.session.add(ang_addr); db.session.flush()
+                else:                  # -3 = unbekannt
+                    ang_addr = None
 
-            ang = Angehoeriger(
-                name=f.name.data,
-                vorname=f.vorname.data,
-                geschlecht=f.geschlecht.data or GeschlechtEnum.UNBEKANNT,
-                verwandtschaftsgrad=f.verwandtschaftsgrad.data,
-                telefonnummer=f.telefonnummer.data,
-                email=f.email.data,
-                adresse=ang_addr,
-                patient=p,
-            )
-            db.session.add(ang)
+                ang = Angehoeriger(
+                    name=f.name.data,
+                    vorname=f.vorname.data,
+                    geschlecht=f.geschlecht.data or GeschlechtEnum.UNBEKANNT,
+                    verwandtschaftsgrad=f.verwandtschaftsgrad.data,
+                    telefonnummer=f.telefonnummer.data,
+                    email=f.email.data,
+                    adresse=ang_addr,
+                    patient=p,
+                )
+                db.session.add(ang)
 
         # ▼ Mehrere Behörden
         for sub in form.behoerden.entries:
