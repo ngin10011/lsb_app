@@ -1,5 +1,5 @@
 # lsb_app/blueprints/tb/routes.py
-from flask import render_template, redirect, url_for, request, jsonify
+from flask import render_template, redirect, url_for, request, jsonify, flash
 import os
 from dotenv import load_dotenv
 from flask_sqlalchemy import SQLAlchemy
@@ -421,6 +421,7 @@ def new():
                 len(form.behoerden.entries),
             )
             db.session.commit()
+            flash("TB gespeichert.", "success")
             logger.info(
                 "TB.new: Commit erfolgreich – patient_id=%s, auftrag_id=%s",
                 p.id,
