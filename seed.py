@@ -1,78 +1,105 @@
-# lsb_app/seed.py
+# seed.py
+
 from datetime import date, time
+import random
+
+from faker import Faker
 
 from lsb_app.extensions import db
-from lsb_app.models import (Patient, Adresse, Auftrag,
-        Bestattungsinstitut, Verlauf)
+from lsb_app.models import (Patient, Adresse, Auftrag, Verlauf,
+        Bestattungsinstitut, Behoerde, Angehoeriger)
 from lsb_app.models.enums import (
     GeschlechtEnum,
     KostenstelleEnum,
     AuftragsStatusEnum,
 )
 
+# Deutscher Faker (für Namen / Adressen)
+fake = Faker("de_DE")
 
-def seed_data():
-    """Legt einen minimalen, aber gültigen Testdatensatz an."""
 
-    # ---------------------
-    # 1) Adresse (Pflichtfelder)
-    # ---------------------
+def create_address() -> Adresse:
+    """
+    Erzeugt eine realistisch aussehende Adresse.
+    Die Distanz wird absichtlich zufällig gesetzt, damit
+    kein externer Distanz-Service nötig ist.
+    """
     addr = Adresse(
-        strasse="Balanstraße",
-        hausnummer="63",
-        plz="80331",
-        ort="München",
+        strasse=fake.street_name(),
+        hausnummer=str(random.randint(0, 80)),
+        plz=fake.postcode(),
+        ort=fake.city(),
+        # Distanz absichtlich direkt gesetzt (0–30 km),
+        # damit später kein ORS/Nominatim-Call nötig ist.
+        distanz=random.randint(0, 30),
     )
     db.session.add(addr)
-    db.session.flush()
+    db.session.flush()  # addr.id verfügbar
+    return addr
 
-    # ---------------------
-    # 2) Patient (Pflichtfelder)
-    # ---------------------
+def create_patient() -> Patient:
     patient = Patient(
-        name="Mustermann",
-        vorname="Max",
-        geburtsdatum=date(1950, 1, 1),
-        geschlecht=GeschlechtEnum.MAENNLICH,
-        meldeadresse=addr,
+        name=fake.last_name(),
+        vorname=fake.first_name(),
+        geburtsdatum=fake.date_of_birth(minimum_age=40, maximum_age=95),
+        geschlecht=random.choice(list(GeschlechtEnum)),
+        meldeadresse=create_address(),
     )
     db.session.add(patient)
     db.session.flush()
+    return patient
 
-    best_addr = Adresse(
-        strasse="Damenstiftstraße",
-        hausnummer="8",
-        plz="80331",
-        ort="München",
+def create_angehoeriger(patient) -> Angehoeriger:
+    angehoeriger = Angehoeriger(
+        name=fake.last_name(),
+        vorname=fake.first_name(),
+        geschlecht=random.choice(list(GeschlechtEnum)),
+        adresse=create_address(),
+        telefonnummer=fake.phone_number(),
+        patient=patient,
     )
-    db.session.add(best_addr)
+    db.session.add(angehoeriger)
     db.session.flush()
+    return angehoeriger
 
+def create_bestattungsinstitut() -> Bestattungsinstitut:
     bestattungsinstitut = Bestattungsinstitut(
-        kurzbezeichnung='Städtische Bestattung',
-        firmenname='Städtische Bestattung München',
-        adresse=best_addr,
+        kurzbezeichnung=fake.company(),
+        firmenname=fake.company(), #später beides gleich setzen
+        adresse=create_address(),
         email='engincakir19@gmail.com',
     )
     db.session.add(bestattungsinstitut)
     db.session.flush()
+    return bestattungsinstitut
 
-    # ---------------------
-    # 3) Auftrag (Pflichtfelder)
-    # ---------------------
+def create_behoerde() -> Behoerde:
+    behoerde = Behoerde(
+        name=fake.company(),
+        adresse=create_address(),
+        email='engincakir19@gmail.com',
+    )
+    db.session.add(behoerde)
+    db.session.flush()
+    return behoerde
+
+def create_auftrag(auftragsnummer) -> Auftrag:
+    patient=create_patient()
+    create_angehoeriger(patient)
+    
     auftrag = Auftrag(
-        auftragsnummer=1000,
+        auftragsnummer=auftragsnummer,
         patient=patient,
-        auftragsadresse=addr,
+        auftragsadresse=create_address(),
 
-        auftragsdatum=date(2025, 11, 29),
-        auftragsuhrzeit=time(10, 30),
+        auftragsdatum=fake.date_between(start_date='-2w'),
+        auftragsuhrzeit=fake.time(),
 
-        kostenstelle=KostenstelleEnum.BESTATTUNGSINSTITUT,
+        kostenstelle=random.choice(list(KostenstelleEnum)),
         mehraufwand=False,
-        status=AuftragsStatusEnum.READY,   # typischer Startstatus
+        status=random.choice(list(AuftragsStatusEnum)),   # typischer Startstatus
 
-        bestattungsinstitut=bestattungsinstitut,
+        bestattungsinstitut=create_bestattungsinstitut(),
 
         # Optional:
         # bemerkung="Seed-Testauftrag",
@@ -83,11 +110,22 @@ def seed_data():
     db.session.add(auftrag)
     db.session.flush()
 
-    verlauf = Verlauf(
-        datum=date.today(),
-        ereignis='TB-Auftrag angelegt',
-        auftrag=auftrag,   
-    )
-    db.session.add(verlauf)
+    return auftrag
+
+
+def seed_data():
+    """
+    Erzeugt mehrere Testdatensätze:
+    - Adresse
+    - Patient
+    - Auftrag
+    - Verlaufseinträge
+    """
+    # Anzahl Testfälle hier anpassen
+    auftragnummer = 1000
+    for _ in range(5):
+        auftrag = create_auftrag(auftragnummer)
+        auftrag.behoerden.append(create_behoerde())
+        auftragnummer += 1
 
     db.session.commit()
