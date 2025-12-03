@@ -11,7 +11,7 @@ from pathlib import Path
 from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
 from lsb_app.services.auftrag_filters import ready_for_email_filter
-from lsb_app.forms import RechnungForm, RechnungCreateForm
+from lsb_app.forms import RechnungForm, RechnungCreateForm, DummyCSRFForm
 from lsb_app.extensions import db
 from lsb_app.models import Angehoeriger, Bestattungsinstitut, Behoerde, GeschlechtEnum
 from decimal import Decimal
@@ -583,21 +583,69 @@ def send_single_email(auftrag_id: int):
 
     return redirect(url_for("auftraege.ready_email_list"))
 
-@bp.route("/send-batch", methods=["POST"])
+@bp.route("/send-batch", methods=["GET", "POST"])
 def send_batch_email():
-    """
-    Erzeugt für alle READY-per-E-Mail-Aufträge jeweils eine neue Rechnung + PDF
-    und 'versendet' sie (aktuell nur Logging).
-    """
+    form = DummyCSRFForm()
+
+    if request.method == "GET":
+        # 1) Alle READY-Aufträge holen
+        auftraege = (
+            db.session.query(Auftrag)
+            .filter(ready_for_email_filter())
+            .order_by(Auftrag.auftragsdatum.asc())
+            .all()
+        )
+
+        if not auftraege:
+            flash("Es sind keine Aufträge für den E-Mail-Versand READY.", "info")
+            return redirect(url_for("auftraege.ready_email_list"))
+
+        # 2) Auswahl-Seite anzeigen
+        return render_template(
+            "rechnungen/send_batch_select.html",
+            auftraege=auftraege,
+            form=form,
+        )
+    
+    if not form.validate_on_submit():
+        abort(400, description="Ungültiges CSRF-Token")
+
+    # === POST: Auswahl wurde abgeschickt ===
+    id_strings = request.form.getlist("auftrag_ids")  # Name wie im Template
+    if not id_strings:
+        flash("Sie haben keinen Auftrag ausgewählt.", "warning")
+        return redirect(url_for("auftraege.ready_email_list"))
+
+    try:
+        selected_ids = [int(x) for x in id_strings]
+    except ValueError:
+        flash("Ungültige Auswahl.", "danger")
+        return redirect(url_for("auftraege.ready_email_list"))
+
+    # Nur die ausgewählten + weiterhin READY
     auftraege = (
         db.session.query(Auftrag)
-        .filter(ready_for_email_filter())
+        .filter(
+            and_(
+                Auftrag.id.in_(selected_ids),
+                ready_for_email_filter(),
+            )
+        )
         .order_by(Auftrag.auftragsdatum.asc())
         .all()
     )
 
     successes: list[Auftrag] = []
     failures: list[tuple[Auftrag, str]] = []
+
+    # Tracken, falls ausgewählte IDs nicht mehr READY / nicht gefunden sind
+    found_ids = {a.id for a in auftraege}
+    missing_ids = set(selected_ids) - found_ids
+    if missing_ids:
+        logger.warning(
+            "send_batch_email: Einige ausgewählte Aufträge sind nicht mehr READY oder existieren nicht: %s",
+            missing_ids,
+        )
 
     for a in auftraege:
         try:

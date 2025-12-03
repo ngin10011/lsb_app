@@ -7,7 +7,8 @@ from .institut import InstitutForm
 from .angehoeriger import AngehoerigerForm
 from .behoerde import BehoerdeForm
 from .rechnung import RechnungForm, RechnungCreateForm
+from .dummy_csrf import DummyCSRFForm
 
 __all__ = ["PatientForm", "TBPatientForm", "AddressForm", "AuftragForm",
            "InstitutForm", "AngehoerigerForm", "BehoerdeForm",
-           "RechnungForm", "RechnungCreateForm"]
+           "RechnungForm", "RechnungCreateForm", "DummyCSRFForm"]
