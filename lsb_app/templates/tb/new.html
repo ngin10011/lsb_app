@@ -716,10 +716,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const out = document.getElementById('addr-check-ang-' + idx);
 
     btn.addEventListener('click', async function () {
-      const strasse    = document.getElementById('ang-strasse-' + idx)?.value || "";
-      const hausnummer = document.getElementById('ang-hausnummer-' + idx)?.value || "";
-      const plz        = document.getElementById('ang-plz-' + idx)?.value || "";
-      const ort        = document.getElementById('ang-ort-' + idx)?.value || "";
+      // Im gleichen Angehörigen-Block bleiben:
+      const block = btn.closest('.border.rounded');  // der umschließende Angehörigen-Container
+
+      const strasse    = block.querySelector('input[name$="-strasse"]')?.value || "";
+      const hausnummer = block.querySelector('input[name$="-hausnummer"]')?.value || "";
+      const plz        = block.querySelector('input[name$="-plz"]')?.value || "";
+      const ort        = block.querySelector('input[name$="-ort"]')?.value || "";
 
       if (!out) return;
       out.className = "small text-muted";

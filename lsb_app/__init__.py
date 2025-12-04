@@ -98,10 +98,22 @@ def create_app():
     from lsb_app.blueprints.rechnungen import bp as rechnungen_bp
     app.register_blueprint(rechnungen_bp, url_prefix="/rechnungen")
 
-    log_dir = os.path.join(app.instance_path, "logs")
-    os.makedirs(log_dir, exist_ok=True)
+    # Logging konfigurieren
+    _configure_logging(app)
 
-    # Logging-Verzeichnis
+
+    # CLI-Kommandos (z. B. flask dev-reset)
+    register_cli(app)
+
+    return app
+
+def _configure_logging(app: Flask) -> None:
+    """Zentrales Logging-Setup.
+
+    - Root-Logger bekommt File-Handler (app.log, error.log)
+    - In Development zusätzlich Konsole mit DEBUG
+    - Module mit logging.getLogger(__name__) propagieren automatisch nach oben
+    """
     log_dir = os.path.join(app.instance_path, "logs")
     os.makedirs(log_dir, exist_ok=True)
 
@@ -109,34 +121,50 @@ def create_app():
         "%(asctime)s [%(levelname)s] %(name)s:%(lineno)d %(message)s"
     )
 
+    # --- File-Handler: app.log (INFO+)
     file_handler = RotatingFileHandler(
         os.path.join(log_dir, "app.log"),
         maxBytes=2 * 1024 * 1024,
         backupCount=5,
+        encoding="utf-8",
     )
     file_handler.setLevel(logging.INFO)
     file_handler.setFormatter(formatter)
-    app.logger.addHandler(file_handler)
 
+    # --- File-Handler: error.log (ERROR+)
     error_handler = RotatingFileHandler(
         os.path.join(log_dir, "error.log"),
         maxBytes=2 * 1024 * 1024,
         backupCount=5,
+        encoding="utf-8",
     )
     error_handler.setLevel(logging.ERROR)
     error_handler.setFormatter(formatter)
-    app.logger.addHandler(error_handler)
+
+    # --- Root-Logger konfigurieren ---
+    root = logging.getLogger()  # Root-Logger
+    # erst alle evtl. vorhandenen Handler entfernen (Flask/Werkzeug-Defaults, Reload etc.)
+    for h in root.handlers[:]:
+        root.removeHandler(h)
+
+    root.addHandler(file_handler)
+    root.addHandler(error_handler)
 
     if app.debug:
+        # In Development zusätzlich Konsole mit DEBUG
         console = logging.StreamHandler()
         console.setLevel(logging.DEBUG)
         console.setFormatter(formatter)
-        app.logger.addHandler(console)
+        root.addHandler(console)
+        root.setLevel(logging.DEBUG)
+    else:
+        root.setLevel(logging.INFO)
 
-    app.logger.setLevel(logging.INFO)
-    app.logger.info("LSB-App initialisiert. Logging aktiv.")
+    # Flask-App-Logger auf Root propagieren lassen
+    # (wir nutzen keine separaten Handler auf app.logger)
+    app.logger.handlers = []
+    app.logger.propagate = True
+    app.logger.setLevel(root.level)
 
-    # CLI-Kommandos (z. B. flask dev-reset)
-    register_cli(app)
+    app.logger.info("Logging initialisiert (debug=%s).", app.debug)
 
-    return app

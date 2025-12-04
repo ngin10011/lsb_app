@@ -30,6 +30,13 @@ def _next_auftragsnummer():
     max_num = db.session.query(func.max(Auftrag.auftragsnummer)).scalar()
     return (max_num or 0) + 1
 
+@bp.route("/test-log")
+def test_log():
+    logger.debug("🐛 DEBUG aus tb.routes")
+    logger.info("ℹ️ INFO aus tb.routes")
+    logger.error("❌ ERROR aus tb.routes")
+    return "ok"
+
 @bp.route("/api/validate_address", methods=["POST"])
 def api_validate_address():
     """
@@ -314,6 +321,12 @@ def new():
                 elif choice == -4:     # wie Auftrag
                     ang_addr = adr_auftrag
                 elif choice == -1:     # neu
+                    # DEBUG: Werte anzeigen
+                    logger.debug(
+                        "Angehörigenadresse (raw): strasse=%r, hausnummer=%r, plz=%r, ort=%r",
+                        f.strasse.data, f.hausnummer.data, f.plz.data, f.ort.data
+                    )
+
                     req = [f.strasse.data, f.hausnummer.data, f.plz.data, f.ort.data]
                     if any(not v for v in req):
                         return render_template("tb/new.html", form=form, error="Bitte alle Felder der Angehörigenadresse ausfüllen.")
