@@ -754,11 +754,7 @@ def send_batch_email():
             .all()
         )
 
-        if not auftraege:
-            flash("Es sind keine Aufträge für den E-Mail-Versand READY.", "info")
-            return redirect(url_for("home.index"))
-
-        # 2) Auswahl-Seite anzeigen
+        # 2) Seite immer rendern – Template kümmert sich darum, ob Liste leer ist
         return render_template(
             "rechnungen/send_batch_select.html",
             auftraege=auftraege,
