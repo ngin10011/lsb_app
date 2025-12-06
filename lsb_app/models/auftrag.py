@@ -16,6 +16,8 @@ class Auftrag(IDMixin, TimestampMixin, db.Model):
     status          = db.Column(SAEnum(AuftragsStatusEnum, native_enum=False, validate_strings=True), nullable=False, index=True)
     bemerkung       = db.Column(db.Text, nullable=True)
 
+    wait_due_date = db.Column(db.Date, nullable=True)
+
     # 1:1 zu Patient
     patient_id = db.Column(
         db.Integer,

@@ -1,11 +1,11 @@
-# lsb_app/blueprints/invoices/routes.py
+# lsb_app/blueprints/rechnungen/routes.py
 from flask import (url_for, current_app, render_template, request, flash, send_file, 
                    redirect, abort)
 from lsb_app.blueprints.rechnungen import bp
 from lsb_app.models import (Rechnung, Auftrag, AuftragsStatusEnum, RechnungsStatusEnum,
                             RechnungsArtEnum, KostenstelleEnum)
 from lsb_app.services.rechnung_vm_factory import build_rechnung_vm
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from weasyprint import HTML
 from pathlib import Path
 from sqlalchemy import and_
@@ -301,6 +301,164 @@ def send_invoice_email(
     except Exception:
         logger.exception("Fehler beim Speichern der Mail im IMAP-Ordner 'Rechnungen_LS' (IMAP)")
         # Versand war erfolgreich, daher Fehler hier nur loggen
+
+def build_inquiry_html_table(auftraege: list[Auftrag]) -> str:
+    """
+    Baut eine HTML-Tabelle für die Anfrage-Mail mit:
+    Leichenschaudatum | Name | Geburtsdatum | Adresse
+    """
+    rows = []
+    for a in auftraege:
+        patient = a.patient
+        # Leichenschaudatum -> ich nehme hier auftragsdatum
+        date_str = a.auftragsdatum.strftime("%d.%m.%Y") if a.auftragsdatum else "—"
+
+        name_str = f"{patient.name}, {patient.vorname}" if patient else "—"
+
+        geburtsdatum = getattr(patient, "geburtsdatum", None)
+        geb_str = geburtsdatum.strftime("%d.%m.%Y") if geburtsdatum else "—"
+
+        # Adresse: hier Beispiel über Auftragsadresse
+        adr = getattr(a, "auftragsadresse", None)
+        if adr:
+            addr_str = f"{adr.strasse} {adr.hausnummer}, {adr.plz} {adr.ort}"
+        else:
+            addr_str = "—"
+
+        rows.append(
+            f"""
+            <tr>
+              <td>{date_str}</td>
+              <td>{name_str}</td>
+              <td>{geb_str}</td>
+              <td>{addr_str}</td>
+            </tr>
+            """
+        )
+
+    rows_html = "\n".join(rows)
+
+    table_html = f"""
+    <table border="1" cellspacing="0" cellpadding="4" style="border-collapse: collapse;">
+      <thead>
+        <tr>
+          <th>Leichenschaudatum</th>
+          <th>Name</th>
+          <th>Geburtsdatum</th>
+          <th>Adresse</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows_html}
+      </tbody>
+    </table>
+    """
+    return table_html
+
+def send_inquiry_email(
+    institut: Bestattungsinstitut,
+    auftraege: list[Auftrag],
+) -> None:
+    """
+    Versendet eine Anfrage an ein Bestattungsinstitut mit einer Tabelle
+    der betroffenen Leichenschauen im Mailtext (HTML).
+    """
+
+    if not institut.email:
+        raise RuntimeError("Bestattungsinstitut hat keine E-Mail-Adresse.")
+
+    cfg = current_app.config
+
+    EMAIL_ADDRESS = cfg.get("MAIL_USERNAME")
+    EMAIL_PASSWORD = cfg.get("MAIL_PASSWORD")
+    SMTP_SERVER = cfg.get("MAIL_SERVER", "smtp.mail.de")
+    SMTP_PORT = int(cfg.get("MAIL_PORT", 465))  # SSL-Port (z. B. 465)
+    IMAP_SERVER = cfg.get("MAIL_IMAP_SERVER", cfg.get("IMAP_SERVER", "imap.mail.de"))
+
+    if not all([EMAIL_ADDRESS, EMAIL_PASSWORD, SMTP_SERVER, SMTP_PORT, IMAP_SERVER]):
+        logger.error("Mail-Konfiguration unvollständig, Inquiry-Versand abgebrochen.")
+        raise RuntimeError("Mail-Konfiguration ist unvollständig.")
+
+    anzahl = len(auftraege)
+
+    if anzahl == 1:
+        ls_phrase = "die folgende Leichenschau"
+    else:
+        ls_phrase = "die folgenden Leichenschauen"
+
+    # --- Tabelle bauen ---
+    table_html = build_inquiry_html_table(auftraege)
+
+    betreff = "Anfrage Beauftragung – Leichenschau"
+
+    text_plain = (
+        "Sehr geehrte Damen und Herren,\n\n"
+        f"bitte teilen Sie mir mit, ob Ihr Institut für {ls_phrase} "
+        "beauftragt wurde.\n\n"
+        "Eine Übersicht finden Sie in der Tabelle im HTML-Teil dieser E-Mail.\n\n"
+        "Vielen Dank und freundliche Grüße\n"
+        f"{cfg.get('COMPANY_NAME', '')}\n"
+    )
+
+    text_html = f"""
+    <p>Sehr geehrte Damen und Herren,</p>
+    <p>
+      bitte teilen Sie mir mit, ob Ihr Institut für {ls_phrase} 
+      beauftragt wurde.
+    </p>
+    {table_html}
+    <p>Vielen Dank und freundliche Grüße<br>
+       {cfg.get('COMPANY_NAME', '')}
+    </p>
+    """
+
+    logger.info(
+        "Starte Inquiry-E-Mail-Versand an %s für %s Aufträge",
+        institut.email,
+        anzahl,
+    )
+
+    msg = EmailMessage()
+    msg["Subject"] = betreff
+    msg["From"] = EMAIL_ADDRESS
+    msg["To"] = institut.email
+
+    # Plaintext + HTML-Alternative
+    msg.set_content(text_plain)
+    msg.add_alternative(text_html, subtype="html")
+
+    # --- SMTP-Versand ---
+    try:
+        with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT) as smtp:
+            smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            smtp.send_message(msg)
+    except Exception:
+        logger.exception("Fehler beim SMTP-Versand der Inquiry-Mail")
+        raise
+
+    # --- IMAP: in 'Leichenschau/Anfragen' ablegen ---
+    try:
+        time.sleep(1)
+        raw_message = msg.as_bytes()
+
+        with imaplib.IMAP4_SSL(IMAP_SERVER) as imap:
+            imap.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            imap.append(
+                '"Leichenschau/Anfragen"',
+                "\\Seen",
+                imaplib.Time2Internaldate(time.localtime()),
+                raw_message,
+            )
+
+        logger.info(
+            "Inquiry-E-Mail im IMAP-Ordner 'Leichenschau/Anfragen' gespeichert (Institut %s).",
+            institut.id,
+        )
+    except Exception:
+        logger.exception("Fehler beim Speichern der Inquiry-Mail im IMAP-Ordner")
+        # Versand war erfolgreich, Fehler hier nur loggen
+
+
 
 @bp.route("/<int:aid>/create", methods=["GET", "POST"])
 def create(aid):
@@ -681,3 +839,107 @@ def send_batch_email():
         successes=successes,
         failures=failures,
     )
+
+@bp.route("/inquiry", methods=["GET", "POST"])
+def send_inquiry():
+    form = DummyCSRFForm()
+
+    if request.method == "GET":
+        auftraege = (
+            db.session.query(Auftrag)
+            .filter(   # z.B. eigener Filter wie ready_for_email_filter()
+                and_(
+                    Auftrag.status == AuftragsStatusEnum.INQUIRY,
+                    Auftrag.kostenstelle == KostenstelleEnum.BESTATTUNGSINSTITUT,
+                )
+            )
+            .order_by(Auftrag.auftragsdatum.asc())
+            .all()
+        )
+        return render_template(
+            "rechnungen/inquiry_select.html",
+            auftraege=auftraege,
+            form=form,
+        )
+
+    # === POST: Anfrage für ein Institut senden ===
+    if not form.validate_on_submit():
+        abort(400, description="Ungültiges CSRF-Token")
+
+    bestattungsinstitut_id = request.form.get("bestattungsinstitut_id", type=int)
+    if not bestattungsinstitut_id:
+        flash("Kein Bestattungsinstitut übermittelt.", "danger")
+        return redirect(url_for("rechnungen.send_inquiry"))
+
+    id_strings = request.form.getlist("auftrag_ids")
+    if not id_strings:
+        flash("Sie haben keine Aufträge ausgewählt.", "warning")
+        return redirect(url_for("rechnungen.send_inquiry"))
+
+    try:
+        selected_ids = [int(x) for x in id_strings]
+    except ValueError:
+        flash("Ungültige Auswahl.", "danger")
+        return redirect(url_for("rechnungen.send_inquiry"))
+
+    # Aufträge holen, die noch im Status INQUIRY sind und zu diesem Institut gehören
+    auftraege = (
+        db.session.query(Auftrag)
+        .filter(
+            and_(
+                Auftrag.id.in_(selected_ids),
+                Auftrag.status == AuftragsStatusEnum.INQUIRY,
+                Auftrag.kostenstelle == KostenstelleEnum.BESTATTUNGSINSTITUT,
+                Auftrag.bestattungsinstitut_id == bestattungsinstitut_id,
+            )
+        )
+        .order_by(Auftrag.auftragsdatum.asc())
+        .all()
+    )
+
+    if not auftraege:
+        flash("Keine passenden Aufträge für dieses Bestattungsinstitut gefunden.", "warning")
+        return redirect(url_for("rechnungen.send_inquiry"))
+
+    institut = auftraege[0].bestattungsinstitut
+    if not institut or not institut.email:
+        flash("Für das ausgewählte Bestattungsinstitut ist keine E-Mail hinterlegt.", "danger")
+        return redirect(url_for("rechnungen.send_inquiry"))
+
+    try:
+        send_inquiry_email(institut, auftraege)
+
+        for a in auftraege:
+            institut = a.bestattungsinstitut 
+
+            a.status = AuftragsStatusEnum.WAIT
+            a.wait_due_date = date.today() + timedelta(days=7)
+
+            inst_name = (
+                institut.kurzbezeichnung
+                or institut.firmenname
+                or f"Bestattungsinstitut #{institut.id}"
+            )
+
+            add_verlauf(
+                a,
+                (
+                    f"Anfrage an {inst_name} gesendet, "
+                    f"automatische Frist bis {a.wait_due_date.strftime('%d.%m.%Y')}"
+                )
+            )
+
+        db.session.commit()
+        flash(
+            f"Anfrage für {len(auftraege)} Auftrag/Aufträge an {institut.email} gesendet.",
+            "success",
+        )
+    except Exception as exc:
+        db.session.rollback()
+        logger.exception(
+            "Fehler beim Inquiry-Versand für Bestattungsinstitut_id=%s", bestattungsinstitut_id
+        )
+        flash(f"Fehler beim Versenden der Anfrage: {exc}", "danger")
+
+    return redirect(url_for("rechnungen.send_inquiry"))
+
