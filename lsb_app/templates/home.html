@@ -110,6 +110,20 @@
       </a>
     </div>
 
+    <div class="col-sm-6 col-lg-3">
+      <a href="{{ url_for('auftraege.wait_list') }}" class="text-decoration-none">
+        <div class="card shadow-sm h-100 {{ 'border-zero card-zero' if vm.wait_is_zero else '' }}">
+          <div class="card-body text-center py-4">
+            <div class="fs-4 mb-1">⏳ WAIT</div>
+            <div class="display-6">{{ vm.wait_count }}</div>
+            <div class="fw-semibold mt-2">Aufträge mit ausstehender Rückmeldung</div>
+          </div>
+        </div>
+      </a>
+    </div>
+
+
+
   </div>
 
   <h2 class="h6 mb-3">Letzte Aufträge</h2>

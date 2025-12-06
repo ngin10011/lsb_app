@@ -45,12 +45,19 @@ def index():
         .scalar()
     )
 
+    wait_count = (
+        db.session.query(func.count(Auftrag.id))
+        .filter(Auftrag.status == AuftragsStatusEnum.WAIT)
+        .scalar()
+    )
+
     vm = HomeVM(
         recent_auftraege=recent_auftraege,
         ready_email_count=ready_email_count,
         print_count=print_count,
         todo_count=todo_count,
         inquiry_count=inquiry_count,
+        wait_count=wait_count,
         debug=current_app.debug, 
         )
     return render_template("home.html", vm=vm)

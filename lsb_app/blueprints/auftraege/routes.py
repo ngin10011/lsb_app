@@ -2,10 +2,11 @@
 from flask import render_template, request, redirect, url_for, flash, abort
 from lsb_app.blueprints.auftraege import bp
 from lsb_app.extensions import db
-from lsb_app.models import Auftrag
+from lsb_app.models import Auftrag, AuftragsStatusEnum
 from lsb_app.forms import AuftragForm
 from lsb_app.models.adresse import Adresse
 from lsb_app.services.auftrag_filters import ready_for_email_filter
+from datetime import date
 from sqlalchemy import asc, desc
 
 @bp.route("/<int:aid>/edit", methods=["GET", "POST"], endpoint="edit")
@@ -74,4 +75,35 @@ def ready_email_list():
         "auftraege/ready_email.html",
         auftraege=auftraege,
         sort=sort,
+    )
+
+
+@bp.route("/wait")
+def wait_list():
+    """Übersicht aller Aufträge im Status WAIT."""
+
+    sort = request.args.get("sort", "due_asc")
+    today = date.today()
+
+    if sort == "due_desc":
+        order_by_clause = [desc(Auftrag.wait_due_date), asc(Auftrag.id)]
+    elif sort == "datum_asc":
+        order_by_clause = [asc(Auftrag.auftragsdatum), asc(Auftrag.id)]
+    elif sort == "datum_desc":
+        order_by_clause = [desc(Auftrag.auftragsdatum), asc(Auftrag.id)]
+    else:  # "due_asc" oder alles andere
+        order_by_clause = [asc(Auftrag.wait_due_date), asc(Auftrag.id)]
+
+    auftraege = (
+        db.session.query(Auftrag)
+        .filter(Auftrag.status == AuftragsStatusEnum.WAIT)
+        .order_by(*order_by_clause)
+        .all()
+    )
+
+    return render_template(
+        "auftraege/wait.html",
+        auftraege=auftraege,
+        sort=sort,
+        today=today,
     )

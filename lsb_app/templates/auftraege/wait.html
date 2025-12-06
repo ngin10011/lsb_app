@@ -1,0 +1,109 @@
+{# lsb_app/templates/auftraege/wait.html #}
+{% extends "base.html" %}
+
+{% block title %}WAIT-Übersicht{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+
+  <h1 class="h4 mb-3">Aufträge im Status WAIT</h1>
+
+  <p class="text-muted mb-4">
+    Hier sehen Sie alle Aufträge, für die eine Anfrage an das Bestattungsinstitut gestellt wurde
+    und bei denen eine Rückmeldung aussteht.
+  </p>
+
+  {% if not auftraege %}
+    <div class="alert alert-info">
+      Es sind derzeit keine Aufträge im Status <strong>WAIT</strong> vorhanden.
+    </div>
+    <a href="{{ url_for('home.index') }}" class="btn btn-secondary mt-3">
+      Zurück zur Startseite
+    </a>
+  {% else %}
+
+    <div class="d-flex justify-content-end mb-2">
+      <div class="btn-group btn-group-sm" role="group">
+        <a href="{{ url_for('auftraege.wait_list', sort='due_asc') }}"
+           class="btn btn-outline-secondary {{ 'active' if sort == 'due_asc' else '' }}">
+          Fälligkeit ↑
+        </a>
+        <a href="{{ url_for('auftraege.wait_list', sort='due_desc') }}"
+           class="btn btn-outline-secondary {{ 'active' if sort == 'due_desc' else '' }}">
+          Fälligkeit ↓
+        </a>
+        <a href="{{ url_for('auftraege.wait_list', sort='datum_asc') }}"
+           class="btn btn-outline-secondary {{ 'active' if sort == 'datum_asc' else '' }}">
+          Datum ↑
+        </a>
+        <a href="{{ url_for('auftraege.wait_list', sort='datum_desc') }}"
+           class="btn btn-outline-secondary {{ 'active' if sort == 'datum_desc' else '' }}">
+          Datum ↓
+        </a>
+      </div>
+    </div>
+
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr>
+          <th>Auftrag</th>
+          <th>Patient</th>
+          <th>Auftragsdatum</th>
+          <th>Fällig am</th>
+          <th>Status Frist</th>
+          <th class="text-end">Aktionen</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in auftraege %}
+          {% set due = a.wait_due_date %}
+          {% set is_overdue = (due is not none and due < today) %}
+          {% if is_overdue %}
+            {% set diff_days = (today - due).days %}
+          {% elif due is not none %}
+            {% set diff_days = (due - today).days %}
+          {% else %}
+            {% set diff_days = none %}
+          {% endif %}
+
+          <tr class="{% if is_overdue %}table-warning{% endif %}">
+            <td>{{ a.auftragsnummer or a.id }}</td>
+            <td>{{ a.patient.name }}, {{ a.patient.vorname }}</td>
+            <td>{{ a.auftragsdatum.strftime('%d.%m.%Y') if a.auftragsdatum else '—' }}</td>
+            <td>{{ due.strftime('%d.%m.%Y') if due else '—' }}</td>
+            <td>
+              {% if due is none %}
+                <span class="text-muted">Keine Fälligkeit gesetzt</span>
+              {% elif is_overdue %}
+                Überfällig seit {{ diff_days }} Tag{% if diff_days != 1 %}en{% endif %}
+              {% elif diff_days == 0 %}
+                Fällig heute
+              {% else %}
+                Noch {{ diff_days }} Tag{% if diff_days != 1 %}e{% endif %}
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <div class="btn-group btn-group-sm" role="group">
+                <a href="{{ url_for('patients.detail', pid=a.patient.id) }}"
+                   class="btn btn-outline-secondary">
+                  Details
+                </a>
+                <a href="{{ url_for('auftraege.edit', aid=a.id, next=url_for('auftraege.wait_list', sort=sort)) }}"
+                   class="btn btn-outline-primary">
+                  Bearbeiten
+                </a>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <a href="{{ url_for('home.index') }}" class="btn btn-outline-secondary mt-3">
+      Zurück zur Startseite
+    </a>
+
+  {% endif %}
+
+</div>
+{% endblock %}
