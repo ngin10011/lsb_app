@@ -58,10 +58,23 @@ def ready_for_email_filter():
     )
 
 def ready_for_inquiry_filter():
-
+    """
+    Aufträge, die:
+    - im Status INQUIRY sind
+    - mind. 3 Tage alt sind
+    - Kostenstelle BESTATTUNGSINSTITUT haben
+    - ein Bestattungsinstitut mit hinterlegter E-Mail besitzen
+    """
     cutoff_date = date.today() - timedelta(days=3)
 
     return and_(
         Auftrag.status == AuftragsStatusEnum.INQUIRY,
         Auftrag.auftragsdatum <= cutoff_date,
+        Auftrag.kostenstelle == KostenstelleEnum.BESTATTUNGSINSTITUT,
+        Auftrag.bestattungsinstitut.has(
+            and_(
+                Bestattungsinstitut.email.isnot(None),
+                Bestattungsinstitut.email != "",
+            )
+        ),
     )

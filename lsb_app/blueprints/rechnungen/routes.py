@@ -10,7 +10,7 @@ from weasyprint import HTML
 from pathlib import Path
 from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
-from lsb_app.services.auftrag_filters import ready_for_email_filter
+from lsb_app.services.auftrag_filters import ready_for_email_filter, ready_for_inquiry_filter
 from lsb_app.forms import RechnungForm, RechnungCreateForm, DummyCSRFForm
 from lsb_app.extensions import db
 from lsb_app.models import Angehoeriger, Bestattungsinstitut, Behoerde, GeschlechtEnum
@@ -843,12 +843,7 @@ def send_inquiry():
     if request.method == "GET":
         auftraege = (
             db.session.query(Auftrag)
-            .filter(   # z.B. eigener Filter wie ready_for_email_filter()
-                and_(
-                    Auftrag.status == AuftragsStatusEnum.INQUIRY,
-                    Auftrag.kostenstelle == KostenstelleEnum.BESTATTUNGSINSTITUT,
-                )
-            )
+            .filter(ready_for_inquiry_filter())
             .order_by(Auftrag.auftragsdatum.asc())
             .all()
         )
