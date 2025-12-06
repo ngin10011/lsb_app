@@ -73,10 +73,33 @@
 
       toastEls.forEach(toastEl => {
         toastContainer.appendChild(toastEl);
-        const toast = new bootstrap.Toast(toastEl);
+
+        // Kategorie anhand der Bootstrap-Klasse bestimmen
+        const classes = toastEl.classList;
+        let delay = 5000; // Default: 5 Sekunden
+
+        if (classes.contains('text-bg-success')) {
+          delay = 4000; // kurz
+        } 
+        else if (classes.contains('text-bg-info')) {
+          delay = 5000;
+        } 
+        else if (classes.contains('text-bg-warning')) {
+          delay = 8000; // länger sichtbar
+        } 
+        else if (classes.contains('text-bg-danger')) {
+          delay = 12000; // lange sichtbar, da kritisch
+        }
+
+        const toast = new bootstrap.Toast(toastEl, {
+          delay: delay,
+          autohide: true
+        });
+
         toast.show();
       });
     </script>
+
 
   </body>
 </html>

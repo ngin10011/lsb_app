@@ -51,7 +51,6 @@ def api_validate_address():
     plz        = data.get("plz", "") or ""
     ort        = data.get("ort", "") or ""
 
-    # Falls etwas Wichtiges fehlt, direkt zurückmelden
     if not (strasse and hausnummer and plz and ort):
         return jsonify({
             "valid": False,
@@ -59,9 +58,17 @@ def api_validate_address():
         }), 200
 
     ok, msg = check_address_exists(strasse, hausnummer, plz, ort)
+
+    # Live-Check: bei ok is None zeigen wir rot „Dienst nicht erreichbar“
+    if ok is None:
+        return jsonify({
+            "valid": False,
+            "message": msg or "Adressdienst aktuell nicht erreichbar."
+        }), 200
+
     return jsonify({
         "valid": bool(ok),
-        "message": msg
+        "message": msg or ("Adresse gültig." if ok else "Adresse ungültig.")
     }), 200
 
 @bp.route("/new", methods=["GET", "POST"])
@@ -150,10 +157,12 @@ def new():
                 form.new_plz.data,
                 form.new_ort.data,
             )
-            if not ok:
-                # Fehlermeldung an ein Feld hängen -> dein Accordion-Fehler-JS greift automatisch
+            if ok is False:
                 form.new_strasse.errors.append(msg)
                 return render_template("tb/new.html", form=form)
+            elif ok is None:
+                flash(msg or "Adressdienst aktuell nicht erreichbar, Meldeadresse wurde ohne Prüfung übernommen.", "warning")
+
             
             adr_melde = Adresse.query.filter_by(
                 strasse=form.new_strasse.data,
@@ -184,9 +193,12 @@ def new():
                 form.auftrag_plz.data,
                 form.auftrag_ort.data,
             )
-            if not ok:
+            if ok is False:
                 form.auftrag_strasse.errors.append(msg)
                 return render_template("tb/new.html", form=form)
+            elif ok is None:
+                flash(msg or "Adressdienst aktuell nicht erreichbar, Auftragsadresse wurde ohne Prüfung übernommen.", "warning")
+
             
             adr_auftrag = Adresse.query.filter_by(
                 strasse=form.auftrag_strasse.data,
@@ -248,9 +260,12 @@ def new():
                     form.bi_plz.data,
                     form.bi_ort.data,
                 )
-                if not ok:
+                if ok is False:
                     form.bi_strasse.errors.append(msg)
                     return render_template("tb/new.html", form=form)
+                elif ok is None:
+                    flash(msg or "Adressdienst aktuell nicht erreichbar, Institutsadresse wurde ohne Prüfung übernommen.", "warning")
+
                 
                 bi_addr = Adresse.query.filter_by(
                     strasse=form.bi_strasse.data,
@@ -338,9 +353,12 @@ def new():
                         f.plz.data,
                         f.ort.data,
                     )
-                    if not ok:
+                    if ok is False:
                         f.strasse.errors.append(msg)
                         return render_template("tb/new.html", form=form)
+                    elif ok is None:
+                        flash(msg or "Adressdienst aktuell nicht erreichbar, Angehörigenadresse wurde ohne Prüfung übernommen.", "warning")
+
                     
                     ang_addr = Adresse.query.filter_by(
                         strasse=f.strasse.data,
@@ -403,9 +421,12 @@ def new():
                     f.beh_plz.data,
                     f.beh_ort.data,
                 )
-                if not ok:
+                if ok is False:
                     f.beh_strasse.errors.append(msg)
                     return render_template("tb/new.html", form=form)
+                elif ok is None:
+                    flash(msg or "Adressdienst aktuell nicht erreichbar, Behördenadresse wurde ohne Prüfung übernommen.", "warning")
+
                 
                 beh_addr = Adresse.query.filter_by(
                     strasse=f.beh_strasse.data,
