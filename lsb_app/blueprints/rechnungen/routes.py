@@ -239,7 +239,7 @@ def send_invoice_email(
             f"{cfg.get('COMPANY_NAME', '')}"
         )
     else:
-        betreff = f"Rechnung LS-{rechnung.auftrag.auftragsnummer} – Leichenschau"
+        betreff = f"Leichenschau - Rechnung LS-{rechnung.auftrag.auftragsnummer}"
         text = (
             "Sehr geehrte Damen und Herren,\n\n"
             f"anbei erhalten Sie die Rechnung LS-{rechnung.auftrag.auftragsnummer} zur durchgeführten Leichenschau.\n\n"
@@ -291,7 +291,7 @@ def send_invoice_email(
         with imaplib.IMAP4_SSL(IMAP_SERVER) as imap:
             imap.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
             # imap.append('"Sent"', '\\Seen', imaplib.Time2Internaldate(time.localtime()), raw_message)
-            imap.append('"Rechnungen_LS"', '\\Seen', imaplib.Time2Internaldate(time.localtime()), raw_message)
+            imap.append('"Leichenschau/Rechnungen"', '\\Seen', imaplib.Time2Internaldate(time.localtime()), raw_message)
 
         logger.info(
             "E-Mail für Rechnung %s im IMAP-Ordner 'Rechnungen_LS' gespeichert.",
