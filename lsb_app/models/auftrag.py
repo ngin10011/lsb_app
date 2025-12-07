@@ -17,6 +17,7 @@ class Auftrag(IDMixin, TimestampMixin, db.Model):
     bemerkung       = db.Column(db.Text, nullable=True)
 
     wait_due_date = db.Column(db.Date, nullable=True)
+    is_inquired = db.Column(db.Boolean, nullable=False, server_default="false")
 
     # 1:1 zu Patient
     patient_id = db.Column(

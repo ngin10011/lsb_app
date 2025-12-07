@@ -3,11 +3,12 @@ from flask import render_template, request, redirect, url_for, flash, abort
 from lsb_app.blueprints.auftraege import bp
 from lsb_app.extensions import db
 from lsb_app.models import Auftrag, AuftragsStatusEnum
-from lsb_app.forms import AuftragForm
+from lsb_app.forms import AuftragForm, DummyCSRFForm
 from lsb_app.models.adresse import Adresse
 from lsb_app.services.auftrag_filters import ready_for_email_filter
 from datetime import date
-from sqlalchemy import asc, desc
+from sqlalchemy import asc, desc, and_, or_
+from lsb_app.services.verlauf import add_verlauf
 
 @bp.route("/<int:aid>/edit", methods=["GET", "POST"], endpoint="edit")
 def edit(aid: int):
@@ -78,12 +79,68 @@ def ready_email_list():
     )
 
 
-@bp.route("/wait")
+@bp.route("/wait", methods=["GET", "POST"])
 def wait_list():
-    """Übersicht aller Aufträge im Status WAIT."""
+    """Übersicht aller Aufträge im Status WAIT, getrennt nach BI-Anfrage und sonstigen Fällen."""
 
-    sort = request.args.get("sort", "due_asc")
+    form = DummyCSRFForm()
     today = date.today()
+    sort = request.args.get("sort", "due_asc")
+
+    # === POST: ausgewählte BI-Anfrage-Aufträge auf READY setzen ===
+    if request.method == "POST":
+        if not form.validate_on_submit():
+            abort(400, description="Ungültiges CSRF-Token")
+
+        id_strings = request.form.getlist("auftrag_ids")
+        if not id_strings:
+            flash("Sie haben keinen Auftrag ausgewählt.", "warning")
+            return redirect(url_for("auftraege.wait_list", sort=sort))
+
+        try:
+            ids = [int(x) for x in id_strings]
+        except ValueError:
+            flash("Ungültige Auswahl.", "danger")
+            return redirect(url_for("auftraege.wait_list", sort=sort))
+
+        auftraege = (
+            db.session.query(Auftrag)
+            .filter(
+                and_(
+                    Auftrag.id.in_(ids),
+                    Auftrag.status == AuftragsStatusEnum.WAIT,
+                    Auftrag.is_inquired.is_(True),
+                )
+            )
+            .all()
+        )
+
+        if not auftraege:
+            flash("Keine passenden Aufträge gefunden.", "warning")
+            return redirect(url_for("auftraege.wait_list", sort=sort))
+
+        for a in auftraege:
+            a.status = AuftragsStatusEnum.READY
+            a.wait_due_date = None
+            a.is_inquired = False
+            add_verlauf(
+                a,
+                "Rückmeldung vom Bestattungsinstitut: Auftrag als READY markiert."
+            )
+
+        try:
+            db.session.commit()
+            flash(
+                f"{len(auftraege)} Auftrag/Aufträge auf READY gesetzt.",
+                "success",
+            )
+        except Exception as exc:
+            db.session.rollback()
+            flash(f"Fehler beim Aktualisieren der Aufträge: {exc}", "danger")
+
+        return redirect(url_for("auftraege.wait_list", sort=sort))
+
+    # === GET: Liste anzeigen ===
 
     if sort == "due_desc":
         order_by_clause = [desc(Auftrag.wait_due_date), asc(Auftrag.id)]
@@ -94,16 +151,37 @@ def wait_list():
     else:  # "due_asc" oder alles andere
         order_by_clause = [asc(Auftrag.wait_due_date), asc(Auftrag.id)]
 
-    auftraege = (
+    # BI-Anfragen: WAIT + is_inquired = True
+    auftraege_inquired = (
         db.session.query(Auftrag)
-        .filter(Auftrag.status == AuftragsStatusEnum.WAIT)
+        .filter(
+            and_(
+                Auftrag.status == AuftragsStatusEnum.WAIT,
+                Auftrag.is_inquired.is_(True),
+            )
+        )
+        .order_by(*order_by_clause)
+        .all()
+    )
+
+    # sonstige WAIT-Fälle: WAIT + (is_inquired False oder None)
+    auftraege_other = (
+        db.session.query(Auftrag)
+        .filter(
+            and_(
+                Auftrag.status == AuftragsStatusEnum.WAIT,
+                or_(Auftrag.is_inquired.is_(False), Auftrag.is_inquired.is_(None)),
+            )
+        )
         .order_by(*order_by_clause)
         .all()
     )
 
     return render_template(
         "auftraege/wait.html",
-        auftraege=auftraege,
-        sort=sort,
         today=today,
+        sort=sort,
+        form=form,
+        auftraege_inquired=auftraege_inquired,
+        auftraege_other=auftraege_other,
     )

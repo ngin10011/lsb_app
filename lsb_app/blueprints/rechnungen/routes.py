@@ -458,8 +458,6 @@ def send_inquiry_email(
         logger.exception("Fehler beim Speichern der Inquiry-Mail im IMAP-Ordner")
         # Versand war erfolgreich, Fehler hier nur loggen
 
-
-
 @bp.route("/<int:aid>/create", methods=["GET", "POST"])
 def create(aid):
     logger.debug("Rechnung.create aufgerufen, auftrag_id=%s, method=%s", aid, request.method)
@@ -905,6 +903,7 @@ def send_inquiry():
 
             a.status = AuftragsStatusEnum.WAIT
             a.wait_due_date = date.today() + timedelta(days=7)
+            a.is_inquired = True
 
             inst_name = (
                 institut.kurzbezeichnung
