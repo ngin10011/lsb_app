@@ -477,7 +477,7 @@ def new():
             return render_template("tb/new.html", form=form)
 
         logger.info("TB.new: Datensatz erfolgreich angelegt, Redirect auf patients.overview")
-        return redirect(url_for("patients.overview"))
+        return redirect(url_for("patients.detail", pid=a.patient_id))
 
     # GET oder Validierungsfehler
     return render_template("tb/new.html", form=form)
