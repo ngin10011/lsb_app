@@ -382,9 +382,15 @@ def send_inquiry_email(
     anzahl = len(auftraege)
 
     if anzahl == 1:
-        ls_phrase = "die folgende Leichenschau"
+        ls_phrase = "eine Leichenschau"
+        person_phrase = "der folgenden Person"
+        rechnung_phrase = "Rechnung"
+        todesfall_phrase = "diesen Todesfall"
     else:
-        ls_phrase = "die folgenden Leichenschauen"
+        ls_phrase = "Leichenschauen"
+        person_phrase = "den folgenden Personen"
+        rechnung_phrase = "Rechnungen"
+        todesfall_phrase = "diese Todesfälle"
 
     # --- Tabelle bauen ---
     table_html = build_inquiry_html_table(auftraege)
@@ -400,11 +406,14 @@ def send_inquiry_email(
         f"{cfg.get('COMPANY_NAME', '')}\n"
     )
 
+
     text_html = f"""
     <p>Sehr geehrte Damen und Herren,</p>
     <p>
-      bitte teilen Sie mir mit, ob Ihr Institut für {ls_phrase} 
-      beauftragt wurde.
+      ich führte {ls_phrase} bei {person_phrase} durch. Die Angehörigen
+      teilten mir mit, dass sie Ihr Bestattungsinstitut beauftragen würden. Bevor
+      ich die {rechnung_phrase} an Sie verschicke, wollte ich mir hiermit bestätigen
+      lassen, dass Sie für {todesfall_phrase} beauftragt wurden.
     </p>
     {table_html}
     <p>Vielen Dank und freundliche Grüße<br>
