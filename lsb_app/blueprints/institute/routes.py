@@ -1,5 +1,6 @@
 # lsb_app/blueprints/institute/routes.py
 from flask import render_template, request, redirect, url_for, flash, abort
+from sqlalchemy import or_
 from lsb_app.blueprints.institute import bp
 from lsb_app.extensions import db
 from lsb_app.models.institut import Bestattungsinstitut
@@ -88,3 +89,26 @@ def create():
             flash(f"Fehler beim Speichern: {e}", "danger")
 
     return render_template("institute/edit.html", form=form, institut=None)
+
+@bp.route("/", methods=["GET"])
+def overview():
+    q = (request.args.get("q") or "").strip()
+
+    query = Bestattungsinstitut.query
+
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            or_(
+                Bestattungsinstitut.kurzbezeichnung.ilike(like),
+                Bestattungsinstitut.firmenname.ilike(like),
+                Bestattungsinstitut.email.ilike(like),
+            )
+        )
+
+    institute = query.order_by(
+        Bestattungsinstitut.kurzbezeichnung.asc(),
+        Bestattungsinstitut.firmenname.asc(),
+    ).all()
+
+    return render_template("institute/overview.html", institute=institute, q=q)

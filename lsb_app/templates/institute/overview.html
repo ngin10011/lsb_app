@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Bestattungsinstitute{% endblock %}
+
+{% block body %}
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h1 class="h3 mb-1">Bestattungsinstitute</h1>
+    <div class="text-muted">Übersicht & Bearbeiten</div>
+  </div>
+</div>
+
+<form class="row g-2 mb-3" method="get">
+  <div class="col-sm-8 col-md-6">
+    <input class="form-control" name="q" value="{{ q }}" placeholder="Suche: Kurzbez., Firmenname, E-Mail">
+  </div>
+  <div class="col-auto">
+    <button class="btn btn-outline-primary" type="submit">Suchen</button>
+    <a class="btn btn-outline-secondary" href="{{ url_for('institute.overview') }}">Reset</a>
+  </div>
+</form>
+
+{% if institute %}
+  <div class="table-responsive">
+    <table class="table table-sm table-striped align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Kurzbez.</th>
+          <th>Firmenname</th>
+          <th>E-Mail</th>
+          <th>Anschreibbar</th>
+          <th style="width: 140px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inst in institute %}
+          <tr>
+            <td class="fw-semibold">{{ inst.kurzbezeichnung }}</td>
+            <td>{{ inst.firmenname }}</td>
+            <td>{{ inst.email or "—" }}</td>
+            <td>{{ "Ja" if inst.anschreibbar else "Nein" }}</td>
+            <td class="text-end">
+              <a class="btn btn-sm btn-outline-primary"
+                 href="{{ url_for('institute.edit', iid=inst.id, next=request.full_path) }}">
+                Bearbeiten
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="alert alert-light border mb-0">
+    <div class="fw-semibold">Keine Institute gefunden.</div>
+    <div class="text-muted">Passe die Suche an oder lege ein neues Institut an.</div>
+  </div>
+{% endif %}
+{% endblock %}
