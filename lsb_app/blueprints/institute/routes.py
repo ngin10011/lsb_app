@@ -1,8 +1,9 @@
+# lsb_app/blueprints/institute/routes.py
 from flask import render_template, request, redirect, url_for, flash, abort
 from lsb_app.blueprints.institute import bp
 from lsb_app.extensions import db
 from lsb_app.models.institut import Bestattungsinstitut
-from lsb_app.models.adresse import Adresse
+from lsb_app.models import Adresse, Auftrag
 from lsb_app.forms import InstitutForm
 
 @bp.route("/<int:iid>/edit", methods=["GET", "POST"])
@@ -41,3 +42,49 @@ def edit(iid: int):
             flash(f"Fehler beim Speichern: {e}", "danger")
 
     return render_template("institute/edit.html", form=form, institut=inst)
+
+@bp.route("/new", methods=["GET", "POST"])
+def create():
+    # Kontext: an welchen Auftrag soll es gehängt werden?
+    aid = request.args.get("aid", type=int)
+    if not aid:
+        abort(400, description="Missing aid (auftrag_id)")
+
+    auftrag = db.session.get(Auftrag, aid)
+    if not auftrag:
+        abort(404)
+
+    form = InstitutForm()
+
+    # Adressauswahl
+    adressen = Adresse.query.order_by(
+        Adresse.strasse.asc(), Adresse.hausnummer.asc(), Adresse.ort.asc()
+    ).all()
+    form.adresse_id.choices = [(a.id, str(a)) for a in adressen]
+
+    if form.validate_on_submit():
+        inst = Bestattungsinstitut(
+            kurzbezeichnung=form.kurzbezeichnung.data,
+            firmenname=form.firmenname.data,
+            email=form.email.data,
+            bemerkung=form.bemerkung.data,
+            anschreibbar=bool(form.anschreibbar.data),
+            adresse_id=form.adresse_id.data,
+            rechnungadress_modus=form.rechnungadress_modus.data,
+        )
+
+        db.session.add(inst)
+        db.session.flush()  # inst.id verfügbar ohne commit
+
+        # Auftrag direkt verknüpfen
+        auftrag.bestattungsinstitut_id = inst.id
+
+        try:
+            db.session.commit()
+            flash("Bestattungsinstitut angelegt und dem Auftrag zugeordnet.", "success")
+            return redirect(request.args.get("next") or url_for("patients.overview"))
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Fehler beim Speichern: {e}", "danger")
+
+    return render_template("institute/edit.html", form=form, institut=None)

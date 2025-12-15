@@ -141,11 +141,20 @@
       <div class="card-body">
         <h2 class="h6 mb-3 d-flex justify-content-between align-items-center">
           <span>Bestattungsinstitut</span>
-          {% if patient.auftrag.bestattungsinstitut %}
-          <a class="btn btn-sm btn-outline-primary"
-            href="{{ url_for('institute.edit', iid=patient.auftrag.bestattungsinstitut_id, next=request.full_path) }}">
-            Bearbeiten
-          </a>
+
+          {% if patient.auftrag %}
+            <a class="btn btn-sm btn-outline-primary"
+              href="{{ url_for(
+                  'auftraege.bestattungsinstitut',
+                  aid=patient.auftrag.id,
+                  next=request.full_path
+              ) }}">
+              {% if patient.auftrag.bestattungsinstitut_id %}
+                Bestattungsinstitut ändern
+              {% else %}
+                Bestattungsinstitut hinzufügen
+              {% endif %}
+            </a>
           {% endif %}
         </h2>
         {% if patient.auftrag and patient.auftrag.bestattungsinstitut %}

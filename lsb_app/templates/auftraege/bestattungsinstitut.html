@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Bestattungsinstitut{% endblock %}
+
+{% block body %}
+<div class="mb-3">
+  <h1 class="h4 mb-1">Bestattungsinstitut</h1>
+  <div class="text-muted">Auftrag #{{ auftrag.id }}</div>
+</div>
+
+<div class="accordion" id="biAccordion">
+
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="headingSelect">
+      <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSelect">
+        Bestehendes auswählen
+      </button>
+    </h2>
+    <div id="collapseSelect" class="accordion-collapse collapse show" data-bs-parent="#biAccordion">
+      <div class="accordion-body">
+        <form method="post">
+          {{ select_form.hidden_tag() }}
+
+          <div class="mb-3">
+            {{ select_form.institut_id.label(class="form-label") }}
+            {{ select_form.institut_id(class="form-select" + (" is-invalid" if select_form.institut_id.errors else "")) }}
+            {% if select_form.institut_id.errors %}
+              <div class="invalid-feedback d-block">{{ select_form.institut_id.errors[0] }}</div>
+            {% endif %}
+          </div>
+
+          <div class="d-flex gap-2">
+            {{ select_form.submit_select(class="btn btn-primary") }}
+            <a class="btn btn-outline-secondary" href="{{ next_url }}">Abbrechen</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="headingNew">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNew">
+        Neu anlegen
+      </button>
+    </h2>
+    <div id="collapseNew" class="accordion-collapse collapse" data-bs-parent="#biAccordion">
+      <div class="accordion-body">
+        <form method="post">
+          {{ new_form.hidden_tag() }}
+
+          <div class="row g-3">
+            <div class="col-md-4">
+              {{ new_form.kurzbezeichnung.label(class="form-label") }}
+              {{ new_form.kurzbezeichnung(class="form-control" + (" is-invalid" if new_form.kurzbezeichnung.errors else "")) }}
+              {% if new_form.kurzbezeichnung.errors %}
+                <div class="invalid-feedback d-block">{{ new_form.kurzbezeichnung.errors[0] }}</div>
+              {% endif %}
+            </div>
+
+            <div class="col-md-8">
+              {{ new_form.firmenname.label(class="form-label") }}
+              {{ new_form.firmenname(class="form-control" + (" is-invalid" if new_form.firmenname.errors else "")) }}
+              {% if new_form.firmenname.errors %}
+                <div class="invalid-feedback d-block">{{ new_form.firmenname.errors[0] }}</div>
+              {% endif %}
+            </div>
+
+            <div class="col-md-6">
+              {{ new_form.email.label(class="form-label") }}
+              {{ new_form.email(class="form-control" + (" is-invalid" if new_form.email.errors else "")) }}
+              {% if new_form.email.errors %}
+                <div class="invalid-feedback d-block">{{ new_form.email.errors[0] }}</div>
+              {% endif %}
+            </div>
+
+            <div class="col-md-6">
+              {{ new_form.rechnungadress_modus.label(class="form-label") }}
+              {{ new_form.rechnungadress_modus(class="form-select" + (" is-invalid" if new_form.rechnungadress_modus.errors else "")) }}
+              {% if new_form.rechnungadress_modus.errors %}
+                <div class="invalid-feedback d-block">{{ new_form.rechnungadress_modus.errors[0] }}</div>
+              {% endif %}
+            </div>
+
+            <div class="col-12">
+              {{ new_form.adresse_id.label(class="form-label") }}
+              {{ new_form.adresse_id(class="form-select" + (" is-invalid" if new_form.adresse_id.errors else "")) }}
+              {% if new_form.adresse_id.errors %}
+                <div class="invalid-feedback d-block">{{ new_form.adresse_id.errors[0] }}</div>
+              {% endif %}
+            </div>
+
+            <div class="col-12">
+              {{ new_form.bemerkung.label(class="form-label") }}
+              {{ new_form.bemerkung(class="form-control" + (" is-invalid" if new_form.bemerkung.errors else ""), rows=4) }}
+              {% if new_form.bemerkung.errors %}
+                <div class="invalid-feedback d-block">{{ new_form.bemerkung.errors[0] }}</div>
+              {% endif %}
+            </div>
+
+            <div class="col-12">
+              <div class="form-check">
+                {{ new_form.anschreibbar(class="form-check-input") }}
+                {{ new_form.anschreibbar.label(class="form-check-label") }}
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mt-3">
+            {{ new_form.submit(class="btn btn-primary") }}
+            <a class="btn btn-outline-secondary" href="{{ next_url }}">Abbrechen</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -2,8 +2,10 @@
 from flask import render_template, request, redirect, url_for, flash, abort
 from lsb_app.blueprints.auftraege import bp
 from lsb_app.extensions import db
-from lsb_app.models import Auftrag, AuftragsStatusEnum
-from lsb_app.forms import AuftragForm, DummyCSRFForm
+from lsb_app.models import (Auftrag, AuftragsStatusEnum,
+        Bestattungsinstitut)
+from lsb_app.forms import (AuftragForm, DummyCSRFForm,
+        InstitutForm, InstitutSelectForm)
 from lsb_app.models.adresse import Adresse
 from lsb_app.services.auftrag_filters import ready_for_email_filter
 from datetime import date
@@ -184,4 +186,75 @@ def wait_list():
         form=form,
         auftraege_inquired=auftraege_inquired,
         auftraege_other=auftraege_other,
+    )
+
+@bp.route("/<int:aid>/bestattungsinstitut", methods=["GET", "POST"])
+def bestattungsinstitut(aid: int):
+    auftrag = db.session.get(Auftrag, aid)
+    if not auftrag:
+        abort(404)
+
+    next_url = request.args.get("next") or url_for("patients.overview")
+
+    # Form 1: bestehendes auswählen
+    select_form = InstitutSelectForm(prefix="sel")
+    institute = Bestattungsinstitut.query.order_by(
+        Bestattungsinstitut.kurzbezeichnung.asc()
+    ).all()
+    select_form.institut_id.choices = [(i.id, f"{i.kurzbezeichnung} – {i.firmenname}") for i in institute]
+
+    # Form 2: neu anlegen (dein bestehender InstitutForm)
+    new_form = InstitutForm(prefix="new")
+    adressen = Adresse.query.order_by(
+        Adresse.strasse.asc(), Adresse.hausnummer.asc(), Adresse.ort.asc()
+    ).all()
+    new_form.adresse_id.choices = [(a.id, str(a)) for a in adressen]
+
+    # Initialwerte für GET
+    if request.method == "GET":
+        if auftrag.bestattungsinstitut_id:
+            select_form.institut_id.data = auftrag.bestattungsinstitut_id
+
+    # POST: Welches Formular wurde abgeschickt?
+    # (WTForms: per prefix + Submit-Button gut unterscheidbar)
+    if select_form.submit_select.data and select_form.validate_on_submit():
+        auftrag.bestattungsinstitut_id = select_form.institut_id.data
+        try:
+            db.session.commit()
+            flash("Bestattungsinstitut wurde aktualisiert.", "success")
+            return redirect(next_url)
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Fehler beim Speichern: {e}", "danger")
+
+    if new_form.submit.data and new_form.validate_on_submit():
+        inst = Bestattungsinstitut(
+            kurzbezeichnung=new_form.kurzbezeichnung.data,
+            firmenname=new_form.firmenname.data,
+            email=new_form.email.data,
+            bemerkung=new_form.bemerkung.data,
+            anschreibbar=bool(new_form.anschreibbar.data),
+            adresse_id=new_form.adresse_id.data,
+            rechnungadress_modus=new_form.rechnungadress_modus.data,
+        )
+
+        db.session.add(inst)
+        db.session.flush()  # inst.id verfügbar
+
+        auftrag.bestattungsinstitut_id = inst.id
+
+        try:
+            db.session.commit()
+            flash("Neues Bestattungsinstitut angelegt und zugeordnet.", "success")
+            return redirect(next_url)
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Fehler beim Speichern: {e}", "danger")
+
+    return render_template(
+        "auftraege/bestattungsinstitut.html",
+        auftrag=auftrag,
+        select_form=select_form,
+        new_form=new_form,
+        next_url=next_url,
     )
