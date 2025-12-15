@@ -8,7 +8,9 @@ from .angehoeriger import AngehoerigerForm
 from .behoerde import BehoerdeForm
 from .rechnung import RechnungForm, RechnungCreateForm
 from .dummy_csrf import DummyCSRFForm
+from .verlauf import VerlaufForm, DeleteForm
 
 __all__ = ["PatientForm", "TBPatientForm", "AddressForm", "AuftragForm",
            "InstitutForm", "AngehoerigerForm", "BehoerdeForm",
-           "RechnungForm", "RechnungCreateForm", "DummyCSRFForm"]
+           "RechnungForm", "RechnungCreateForm", "DummyCSRFForm",
+           "VerlaufForm", "DeleteForm"]

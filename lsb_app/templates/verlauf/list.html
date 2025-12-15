@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Verlauf{% endblock %}
+
+{% block body %}
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h1 class="h3 mb-1">Verlauf</h1>
+    <div class="text-muted">Auftrag #{{ auftrag.id }}</div>
+  </div>
+
+  <a class="btn btn-primary"
+     href="{{ url_for('verlauf.new', auftrag_id=auftrag.id) }}">
+    + Neuer Eintrag
+  </a>
+</div>
+
+{% if verlauf %}
+  <div class="list-group">
+    {% for v in verlauf %}
+      <div class="list-group-item">
+        <div class="d-flex justify-content-between align-items-start">
+          <div class="me-3">
+            <div class="fw-semibold">
+              {{ v.datum.strftime('%d.%m.%Y') }}
+            </div>
+            <div class="mt-2" style="white-space: pre-wrap;">
+              {{ v.ereignis }}
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary btn-sm"
+               href="{{ url_for('verlauf.edit', auftrag_id=auftrag.id, verlauf_id=v.id) }}">
+              Bearbeiten
+            </a>
+
+            <form method="post"
+                  action="{{ url_for('verlauf.delete', auftrag_id=auftrag.id, verlauf_id=v.id) }}"
+                  class="d-inline">
+              {{ delete_form.hidden_tag() }}
+              <button type="submit"
+                      class="btn btn-outline-danger btn-sm"
+                      onclick="return confirm('Eintrag wirklich löschen?');">
+                Löschen
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="alert alert-light border">
+    <div class="fw-semibold">Noch keine Verlaufseinträge.</div>
+    <div class="text-muted">Lege den ersten Eintrag an, z.B. „Proben angekommen“, „Rechnung versendet“, …</div>
+  </div>
+{% endif %}
+
+<div class="mt-3">
+  {# Optional: zurück zur Auftrag-Detailseite, falls du so eine Route hast #}
+  {# <a class="btn btn-link px-0" href="{{ url_for('auftrag.detail', auftrag_id=auftrag.id) }}">← Zurück zum Auftrag</a> #}
+</div>
+{% endblock %}

@@ -276,39 +276,68 @@
   <div class="col-12">
     <div class="card">
       <div class="card-body">
-        <h2 class="h6 mb-3">Verlauf</h2>
-        {% if patient.auftrag and patient.auftrag.verlaeufe %}
-          <div class="table-responsive">
-            <table class="table table-sm table-striped align-middle">
-              <thead class="table-light">
-                <tr>
-                  <th>Datum</th>
-                  <th>Ereignis</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for ver in patient.auftrag.verlaeufe %}
-                <tr>
-                  <td>{{ ver.datum }}</td>
-                  <td>{{ ver.ereignis }}</td>
-                  <td>          
-                    <a class="btn btn-sm btn-outline-primary"
-                    href="#">
-                    Bearbeiten
-                    </a>
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
+
+        <h2 class="h6 mb-3 d-flex justify-content-between align-items-center">
+          <span>Verlauf</span>
+
+          {% if patient.auftrag %}
+            <div class="d-flex gap-2">
+              <a class="btn btn-sm btn-outline-secondary"
+                 href="{{ url_for('verlauf.index', auftrag_id=patient.auftrag.id) }}">
+                Alle Einträge
+              </a>
+              <a class="btn btn-sm btn-outline-primary"
+                 href="{{ url_for('verlauf.new', auftrag_id=patient.auftrag.id) }}">
+                + Eintrag
+              </a>
+            </div>
+          {% endif %}
+        </h2>
+
+        {% if patient.auftrag %}
+          {% if patient.auftrag.verlaeufe %}
+            <div class="table-responsive">
+              <table class="table table-sm table-striped align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width: 140px;">Datum</th>
+                    <th>Ereignis</th>
+                    <th style="width: 120px;"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for ver in patient.auftrag.verlaeufe %}
+                    <tr>
+                      <td>
+                        {{ ver.datum.strftime('%d.%m.%Y') if ver.datum else '—' }}
+                      </td>
+                      <td style="white-space: pre-wrap;">
+                        {{ ver.ereignis }}
+                      </td>
+                      <td class="text-end">
+                        <a class="btn btn-sm btn-outline-primary"
+                           href="{{ url_for('verlauf.edit',
+                                            auftrag_id=patient.auftrag.id,
+                                            verlauf_id=ver.id) }}">
+                          Bearbeiten
+                        </a>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="text-muted">Kein Verlauf erfasst.</div>
+          {% endif %}
         {% else %}
-          <div class="text-muted">Kein Verlauf erfasst.</div>
+          <div class="text-muted">Kein Auftrag vorhanden – daher kein Verlauf möglich.</div>
         {% endif %}
+
       </div>
     </div>
   </div>
+
 
 </div>
 

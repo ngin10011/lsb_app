@@ -98,6 +98,9 @@ def create_app():
     from lsb_app.blueprints.rechnungen import bp as rechnungen_bp
     app.register_blueprint(rechnungen_bp, url_prefix="/rechnungen")
 
+    from lsb_app.blueprints.verlauf import bp as verlauf_bp
+    app.register_blueprint(verlauf_bp)
+
     # Logging konfigurieren
     _configure_logging(app)
 

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{% if verlauf %}Verlauf bearbeiten{% else %}Neuer Verlauf{% endif %}{% endblock %}
+
+{% block body %}
+<div class="mb-3">
+  <h1 class="h3 mb-1">
+    {% if verlauf %}Verlauf bearbeiten{% else %}Neuer Verlauf{% endif %}
+  </h1>
+  <div class="text-muted">Auftrag #{{ auftrag.id }}</div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <form method="post">
+      {{ form.hidden_tag() }}
+
+      <div class="mb-3">
+        {{ form.datum.label(class="form-label") }}
+        {{ form.datum(class="form-control" + (" is-invalid" if form.datum.errors else "")) }}
+        {% if form.datum.errors %}
+          <div class="invalid-feedback d-block">
+            {{ form.datum.errors[0] }}
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="mb-3">
+        {{ form.ereignis.label(class="form-label") }}
+        {{ form.ereignis(
+            class="form-control" + (" is-invalid" if form.ereignis.errors else ""),
+            rows=6
+        ) }}
+        {% if form.ereignis.errors %}
+          <div class="invalid-feedback d-block">
+            {{ form.ereignis.errors[0] }}
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">Speichern</button>
+        <a class="btn btn-outline-secondary"
+           href="{{ url_for('verlauf.index', auftrag_id=auftrag.id) }}">
+          Abbrechen
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
