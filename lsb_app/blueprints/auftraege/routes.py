@@ -3,13 +3,14 @@ from flask import render_template, request, redirect, url_for, flash, abort
 from lsb_app.blueprints.auftraege import bp
 from lsb_app.extensions import db
 from lsb_app.models import (Auftrag, AuftragsStatusEnum,
-        Bestattungsinstitut)
+        Bestattungsinstitut, Rechnung)
 from lsb_app.forms import (AuftragForm, DummyCSRFForm,
         InstitutForm, InstitutSelectForm)
 from lsb_app.models.adresse import Adresse
 from lsb_app.services.auftrag_filters import ready_for_email_filter
-from datetime import date
-from sqlalchemy import asc, desc, and_, or_
+from datetime import date, timedelta, datetime
+from sqlalchemy import asc, desc, and_, or_, func
+from sqlalchemy.orm import selectinload
 from lsb_app.services.verlauf import add_verlauf
 
 @bp.route("/<int:aid>/edit", methods=["GET", "POST"], endpoint="edit")
@@ -258,3 +259,50 @@ def bestattungsinstitut(aid: int):
         new_form=new_form,
         next_url=next_url,
     )
+
+@bp.route("/overdue")
+def overdue_list():
+    now = datetime.now()
+    cutoff = now - timedelta(days=30)
+
+    latest_rechnung = (
+        db.session.query(
+            Rechnung.auftrag_id.label("auftrag_id"),
+            func.max(Rechnung.version).label("max_version"),
+        )
+        .group_by(Rechnung.auftrag_id)
+        .subquery()
+    )
+
+    rows = (
+        db.session.query(Auftrag, Rechnung)
+        .join(latest_rechnung, latest_rechnung.c.auftrag_id == Auftrag.id)
+        .join(
+            Rechnung,
+            and_(
+                Rechnung.auftrag_id == latest_rechnung.c.auftrag_id,
+                Rechnung.version == latest_rechnung.c.max_version,
+            ),
+        )
+        .options(selectinload(Auftrag.patient))
+        .filter(Rechnung.gesendet_datum.isnot(None))
+        .filter(Rechnung.gesendet_datum <= cutoff)
+        .order_by(Rechnung.gesendet_datum.asc())
+        .all()
+    )
+
+    items = []
+    for auftrag, rechnung in rows:
+        days_since_sent = (now - rechnung.gesendet_datum).days
+        overdue_days = max(0, days_since_sent - 30)
+
+        items.append(
+            dict(
+                auftrag=auftrag,
+                rechnung=rechnung,
+                days_since_sent=days_since_sent,
+                overdue_days=overdue_days,
+            )
+        )
+
+    return render_template("auftraege/overdue.html", items=items, cutoff=cutoff)
