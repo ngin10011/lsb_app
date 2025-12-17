@@ -82,7 +82,6 @@ def ready_email_list():
         sort=sort,
     )
 
-
 @bp.route("/wait", methods=["GET", "POST"])
 def wait_list():
     """Übersicht aller Aufträge im Status WAIT, getrennt nach BI-Anfrage und sonstigen Fällen."""
