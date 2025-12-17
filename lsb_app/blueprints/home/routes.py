@@ -4,6 +4,7 @@ from lsb_app.extensions import db
 from lsb_app.models import Auftrag
 from sqlalchemy import func, or_, and_
 from sqlalchemy.orm import selectinload
+from datetime import date
 from datetime import datetime, timedelta
 from lsb_app.viewmodels.home_vm import HomeVM
 from lsb_app.models import (AuftragsStatusEnum, Rechnung,
@@ -46,9 +47,15 @@ def index():
         .scalar()
     )
 
-    wait_count = (
+    today = date.today()
+
+    wait_overdue_count = (
         db.session.query(func.count(Auftrag.id))
-        .filter(Auftrag.status == AuftragsStatusEnum.WAIT)
+        .filter(
+            Auftrag.status == AuftragsStatusEnum.WAIT,
+            Auftrag.wait_due_date.isnot(None),
+            Auftrag.wait_due_date < today,
+        )
         .scalar()
     )
 
@@ -85,7 +92,7 @@ def index():
         print_count=print_count,
         todo_count=todo_count,
         inquiry_count=inquiry_count,
-        wait_count=wait_count,
+        wait_overdue_count=wait_overdue_count,
         overdue_count=overdue_count,
         debug=current_app.debug,
     )

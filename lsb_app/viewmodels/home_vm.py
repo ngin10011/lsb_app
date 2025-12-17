@@ -15,7 +15,7 @@ class HomeVM:
     print_count: int
     todo_count: int
     inquiry_count: int
-    wait_count: int
+    wait_overdue_count: int
     overdue_count: int
 
     @property
@@ -35,8 +35,8 @@ class HomeVM:
         return not self.inquiry_count
     
     @property
-    def wait_is_zero(self) -> bool:
-        return not self.wait_count
+    def wait_overdue_is_zero(self) -> bool:
+        return not self.wait_overdue_count
     
     @property
     def overdue_is_zero(self) -> bool:
