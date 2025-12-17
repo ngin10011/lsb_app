@@ -1,9 +1,11 @@
 # lsb_app/models/auftrag.py
 from sqlalchemy import Enum as SAEnum
+from sqlalchemy import desc
 from lsb_app.extensions import db
 from lsb_app.models.base import IDMixin, TimestampMixin
 from lsb_app.models.enums import KostenstelleEnum, AuftragsStatusEnum
 from lsb_app.models.associations import auftrag_behoerde
+from lsb_app.models.verlauf import Verlauf
 
 class Auftrag(IDMixin, TimestampMixin, db.Model):
     __tablename__ = "auftrag"
@@ -67,6 +69,7 @@ class Auftrag(IDMixin, TimestampMixin, db.Model):
         cascade="all, delete-orphan",
         passive_deletes=True,
         lazy="selectin",
+        order_by=lambda: (desc(Verlauf.datum), desc(Verlauf.id)),
     )
 
     def __repr__(self):
