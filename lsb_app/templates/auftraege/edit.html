@@ -42,6 +42,14 @@
       {{ form.status(class="form-select") }}
       {% for e in form.status.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
     </div>
+    <div class="col-md-4 d-none" id="wait-due-date-wrapper">
+      <label class="form-label">{{ form.wait_due_date.label }}</label>
+      {{ form.wait_due_date(class="form-control", placeholder="YYYY-MM-DD") }}
+      {% for e in form.wait_due_date.errors %}
+        <div class="text-danger small">{{ e }}</div>
+      {% endfor %}
+    </div>
+
     <div class="col-12">
       <label class="form-label">{{ form.bemerkung.label }}</label>
       {{ form.bemerkung(class="form-control", rows="3") }}
@@ -70,4 +78,30 @@
     {{ form.submit(class="btn btn-primary") }}
   </div>
 </form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const statusSelect = document.querySelector('select[name="status"]');
+    const waitWrapper = document.getElementById("wait-due-date-wrapper");
+
+    if (!statusSelect || !waitWrapper) return;
+
+    function toggleWaitDate() {
+      if (statusSelect.value === "WAIT") {
+        waitWrapper.classList.remove("d-none");
+      } else {
+        waitWrapper.classList.add("d-none");
+        const input = waitWrapper.querySelector("input");
+        if (input) input.value = "";
+      }
+    }
+
+    // Initialzustand (wichtig beim Bearbeiten!)
+    toggleWaitDate();
+
+    statusSelect.addEventListener("change", toggleWaitDate);
+  });
+</script>
 {% endblock %}

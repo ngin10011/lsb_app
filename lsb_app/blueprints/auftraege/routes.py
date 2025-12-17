@@ -36,6 +36,7 @@ def edit(aid: int):
         auftrag.auftragsuhrzeit = form.auftragsuhrzeit.data
         auftrag.kostenstelle    = form.kostenstelle.data
         auftrag.status          = form.status.data
+        auftrag.wait_due_date = form.wait_due_date.data if auftrag.status == AuftragsStatusEnum.WAIT else None
         auftrag.mehraufwand     = bool(form.mehraufwand.data)
         auftrag.bemerkung       = form.bemerkung.data
 
