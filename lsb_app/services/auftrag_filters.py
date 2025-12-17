@@ -57,6 +57,34 @@ def ready_for_email_filter():
         ),
     )
 
+def has_deliverable_email_filter():
+    """READY + (je nach Kostenstelle) zustellbare E-Mail vorhanden."""
+    return and_(
+        Auftrag.status == AuftragsStatusEnum.READY,
+        or_(
+            and_(
+                Auftrag.kostenstelle == KostenstelleEnum.BESTATTUNGSINSTITUT,
+                Auftrag.bestattungsinstitut.has(
+                    and_(Bestattungsinstitut.email.isnot(None), Bestattungsinstitut.email != "")
+                ),
+            ),
+            and_(
+                Auftrag.kostenstelle == KostenstelleEnum.ANGEHOERIGE,
+                Auftrag.patient.has(
+                    Patient.angehoerige.any(
+                        and_(Angehoeriger.email.isnot(None), Angehoeriger.email != "")
+                    )
+                ),
+            ),
+            and_(
+                Auftrag.kostenstelle == KostenstelleEnum.BEHOERDE,
+                Auftrag.behoerden.any(
+                    and_(Behoerde.email.isnot(None), Behoerde.email != "")
+                ),
+            ),
+        ),
+    )
+
 def ready_for_inquiry_filter():
     """
     Aufträge, die:

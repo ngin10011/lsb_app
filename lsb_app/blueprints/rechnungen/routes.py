@@ -8,9 +8,10 @@ from lsb_app.services.rechnung_vm_factory import build_rechnung_vm
 from datetime import date, datetime, timedelta
 from weasyprint import HTML
 from pathlib import Path
-from sqlalchemy import and_
+from sqlalchemy import and_, desc, asc
 from sqlalchemy.exc import SQLAlchemyError
-from lsb_app.services.auftrag_filters import ready_for_email_filter, ready_for_inquiry_filter
+from lsb_app.services.auftrag_filters import (ready_for_email_filter, ready_for_inquiry_filter,
+            has_deliverable_email_filter)
 from lsb_app.forms import RechnungForm, RechnungCreateForm, DummyCSRFForm
 from lsb_app.extensions import db
 from lsb_app.models import Angehoeriger, Bestattungsinstitut, Behoerde, GeschlechtEnum
@@ -753,19 +754,45 @@ def send_batch_email():
     form = DummyCSRFForm()
 
     if request.method == "GET":
-        # 1) Alle READY-Aufträge holen
-        auftraege = (
+        sort = request.args.get("sort", "datum_asc")
+        today = date.today()
+        cutoff_date = today - timedelta(days=3)
+
+        if sort == "datum_desc":
+            order_by_clause = [desc(Auftrag.auftragsdatum), asc(Auftrag.id)]
+        else:  # datum_asc
+            order_by_clause = [asc(Auftrag.auftragsdatum), asc(Auftrag.id)]
+
+        # OBEN: wirklich versandbereit (>= 3 Tage alt)
+        auftraege_ready = (
             db.session.query(Auftrag)
             .filter(ready_for_email_filter())
-            .order_by(Auftrag.auftragsdatum.asc())
+            .order_by(*order_by_clause)
             .all()
         )
 
-        # 2) Seite immer rendern – Template kümmert sich darum, ob Liste leer ist
+        # UNTEN: gleiche Kriterien, aber noch < 3 Tage alt
+        auftraege_pending = (
+            db.session.query(Auftrag)
+            .filter(
+                and_(
+                    has_deliverable_email_filter(),
+                    Auftrag.auftragsdatum > cutoff_date,   # noch nicht erfüllt
+                )
+            )
+            .order_by(*order_by_clause)
+            .all()
+        )
+
         return render_template(
             "rechnungen/send_batch_select.html",
-            auftraege=auftraege,
+            auftraege=auftraege_ready,          # oben (bestehender Name)
+            auftraege_pending=auftraege_pending, # unten
+            today=today,
+            cutoff_date=cutoff_date,
+            sort=sort,
             form=form,
+            timedelta=timedelta,
         )
     
     if not form.validate_on_submit():

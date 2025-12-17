@@ -1,3 +1,4 @@
+{# lsb_app/templates/rechnungen/send_batch_select.html #}
 {% extends "base.html" %}
 
 {% block title %}Batch-Versand vorbereiten{% endblock %}
@@ -59,12 +60,72 @@
     </form>
 
   {% else %}
-    <div class="alert alert-info">
-      Es sind derzeit keine Aufträge im Status <strong>READY</strong> für den E-Mail-Versand vorhanden.
-    </div>
-    <a href="{{ url_for('home.index') }}" class="btn btn-outline-secondary mt-3">
-      Zurück zur Startseite
-    </a>
+    {% if not auftraege_pending %}
+      <div class="alert alert-info">
+        Es sind derzeit keine Aufträge im Status <strong>READY</strong> für den E-Mail-Versand vorhanden.
+      </div>
+      <a href="{{ url_for('home.index') }}" class="btn btn-outline-secondary mt-3">
+        Zurück zur Startseite
+      </a>
+    {% endif %}
+  {% endif %}
+
+
+  {% if auftraege_pending %}
+    <hr class="my-4">
+
+    <h2 class="h6 mb-2">Noch nicht fällige READY-Aufträge</h2>
+    <p class="text-muted mb-3">
+      Diese Aufträge haben eine zustellbare E-Mail-Adresse, sind aber noch keine 3 Tage alt.
+    </p>
+
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr>
+          <th class="text-end">Aktionen</th>
+          <th>Auftrag</th>
+          <th>Patient</th>
+          <th>Auftragsdatum</th>
+          <th>Versand ab</th>
+          <th>Status Frist</th>
+          <th>Kostenstelle</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in auftraege_pending %}
+          {% if a.auftragsdatum %}
+            {% set ready_date = a.auftragsdatum + timedelta(days=3) %}
+            {% set diff_days = (ready_date - today).days %}
+          {% else %}
+            {% set ready_date = none %}
+            {% set diff_days = none %}
+          {% endif %}
+
+          <tr>
+            <td class="text-end">
+              <a class="btn btn-sm btn-outline-secondary"
+                href="{{ url_for('patients.detail', pid=a.patient.id) }}">
+                Details
+              </a>
+            </td>
+            <td>{{ a.auftragsnummer or a.id }}</td>
+            <td>{{ a.patient.name }}, {{ a.patient.vorname }}</td>
+            <td>{{ a.auftragsdatum.strftime('%d.%m.%Y') if a.auftragsdatum else '-' }}</td>
+            <td>{{ ready_date.strftime('%d.%m.%Y') if ready_date else '-' }}</td>
+            <td>
+              {% if diff_days is none %}
+                <span class="text-muted">—</span>
+              {% elif diff_days == 0 %}
+                Fällig heute
+              {% else %}
+                Noch {{ diff_days }} Tag{% if diff_days != 1 %}e{% endif %}
+              {% endif %}
+            </td>
+            <td>{{ a.kostenstelle.value if a.kostenstelle else '-' }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   {% endif %}
 
 </div>
