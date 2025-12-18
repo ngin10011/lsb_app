@@ -306,3 +306,15 @@ def overdue_list():
         )
 
     return render_template("auftraege/overdue.html", items=items, cutoff=cutoff)
+
+@bp.route("/todo", methods=["GET"])
+def todo_list():
+    auftraege = (
+        db.session.query(Auftrag)
+        .options(selectinload(Auftrag.patient))
+        .filter(Auftrag.status == AuftragsStatusEnum.TODO)
+        .order_by(Auftrag.auftragsnummer.asc())
+        .all()
+    )
+    return render_template("auftraege/todo.html", auftraege=auftraege)
+

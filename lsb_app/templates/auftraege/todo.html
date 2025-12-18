@@ -1,0 +1,48 @@
+{# lsb_app/templates/auftraege/todo.html #}
+{% extends "base.html" %}
+{% block title %}TODO – Aufträge{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h4 mb-0">TODO – Aufträge</h1>
+    <span class="badge text-bg-secondary">{{ auftraege|length }}</span>
+  </div>
+
+  <table class="table table-sm align-middle">
+    <thead>
+      <tr>
+        <th>Auftrag</th>
+        <th>Patient</th>
+        <th>Datum</th>
+        <th>Status</th>
+        <th>Bemerkung</th>
+        <th class="text-end"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in auftraege %}
+      <tr>
+        <td>{{ a.auftragsnummer or a.id }}</td>
+        <td>{{ a.patient.name }}, {{ a.patient.vorname }}</td>
+        <td>{{ a.auftragsdatum.strftime('%d.%m.%Y') if a.auftragsdatum else '—' }}</td>
+        <td>{{ a.status.value if a.status else '—' }}</td>
+        <td>{{ a.bemerkung }}</td>
+        <td class="text-end">
+          <a class="btn btn-sm btn-outline-secondary"
+             href="{{ url_for('patients.detail', pid=a.patient.id) }}">
+            Patient-Details
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+
+      {% if not auftraege %}
+      <tr>
+        <td colspan="5" class="text-center text-muted">Keine TODO-Aufträge vorhanden</td>
+      </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
