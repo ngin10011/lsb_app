@@ -64,8 +64,9 @@ def _visible_models(only_param: str | None):
 def db_overview():
     # Optional: nur im Debug-Modus anzeigen.
     # Entfernen Sie die nächste Zeile, wenn auch ohne DEBUG erlaubt sein soll.
-    if not current_app.debug and not current_app.testing:
-        abort(404)
+    
+    # if not current_app.debug and not current_app.testing:
+    #    abort(404)
 
     # Parameter
     limit = request.args.get("limit", default=50, type=int)
