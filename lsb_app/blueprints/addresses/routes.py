@@ -18,6 +18,7 @@ def edit(aid: int):
         adr.hausnummer = form.hausnummer.data
         adr.plz = form.plz.data
         adr.ort = form.ort.data
+        adr.distanz = form.distanz.data
 
         try:
             db.session.commit()

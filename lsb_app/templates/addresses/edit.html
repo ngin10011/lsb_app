@@ -29,6 +29,11 @@
       {{ form.ort(class="form-control") }}
       {% for e in form.ort.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
     </div>
+    <div class="col-md-4">
+      <label class="form-label">{{ form.distanz.label }}</label>
+      {{ form.distanz(class="form-control") }}
+      {% for e in form.distanz.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+    </div>
   </div>
 
   <div class="mt-4">

@@ -1,6 +1,6 @@
 # lsb_app/forms/address.py
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField
+from wtforms import StringField, SubmitField, IntegerField
 from wtforms.validators import DataRequired, Length
 
 def strip_or_none(v):
@@ -11,4 +11,5 @@ class AddressForm(FlaskForm):
     hausnummer = StringField("Nr.",        validators=[DataRequired(), Length(max=20)],  filters=[strip_or_none])
     plz        = StringField("PLZ",        validators=[DataRequired(), Length(max=10)],  filters=[strip_or_none])
     ort        = StringField("Ort",        validators=[DataRequired(), Length(max=120)], filters=[strip_or_none])
+    distanz    = IntegerField("Distanz",   validators=[DataRequired()])
     submit     = SubmitField("Speichern")
