@@ -57,7 +57,7 @@
 {% endif %}
 
 <div class="mt-3">
-  {# Optional: zurück zur Auftrag-Detailseite, falls du so eine Route hast #}
-  {# <a class="btn btn-link px-0" href="{{ url_for('auftrag.detail', auftrag_id=auftrag.id) }}">← Zurück zum Auftrag</a> #}
+  <a href="{{ url_for('patients.detail', pid=auftrag.patient.id) }}" class="btn btn-outline-secondary">Zurück zum Auftrag</a>
 </div>
+
 {% endblock %}
