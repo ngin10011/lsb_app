@@ -35,7 +35,7 @@
             <tr><th class="text-muted">Name</th><td>{{ patient.name }}</td></tr>
             <tr><th class="text-muted">Geburtsname</th><td>{{ show(patient.geburtsname) }}</td></tr>
             <tr><th class="text-muted">Vorname</th><td>{{ patient.vorname }}</td></tr>
-            <tr><th class="text-muted">Geburtsdatum</th><td>{{ patient.geburtsdatum }}</td></tr>
+            <tr><th class="text-muted">Geburtsdatum</th><td>{{ patient.geburtsdatum.strftime("%d.%m.%Y") }}</td></tr>
             <tr><th class="text-muted">Geschlecht</th><td>{{ show(patient.geschlecht) }}</td></tr>
             <tr>
               <th class="text-muted">Meldeadresse</th>
@@ -66,7 +66,7 @@
           <table class="table table-sm table-borderless align-middle mb-0">
             <tbody>
               <tr><th class="text-muted">Auftragsnummer</th><td>{{ patient.auftrag.auftragsnummer }}</td></tr>
-              <tr><th class="text-muted">Datum</th><td>{{ patient.auftrag.auftragsdatum }}</td></tr>
+              <tr><th class="text-muted">Datum</th><td>{{ patient.auftrag.auftragsdatum.strftime("%d.%m.%Y") }}</td></tr>
               <tr><th class="text-muted">Uhrzeit</th><td>{{ patient.auftrag.auftragsuhrzeit }}</td></tr>
               <tr><th class="text-muted">Kostenstelle</th><td>{{ show(patient.auftrag.kostenstelle) }}</td></tr>
               <tr><th class="text-muted">Status</th><td>{{ show(patient.auftrag.status) }}</td></tr>
