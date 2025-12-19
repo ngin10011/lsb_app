@@ -1,3 +1,4 @@
+<!-- lsb_app/templates/rechnungen/standard.html -->
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -123,7 +124,7 @@
             <p><strong>Rechnungsnummer:</strong> {{ vm.rechnungsnummer_str }}<br>
             <strong>Rechnungsdatum:</strong> {{ vm.rechnungsdatum.strftime("%d.%m.%Y") }}<br>
             <strong>Leichenschau am:</strong> {{ vm.auftragsdatum.strftime("%d.%m.%Y")}}<br><br>
-            <strong>{{ vm.verstorbener_gegendert }}:</strong> {{ vm.patient_name_komplett }} (*{{ vm.patient_geburtsdatum }})</p>
+            <strong>{{ vm.verstorbener_gegendert }}:</strong> {{ vm.patient_name_komplett }} (*{{ vm.patient_geburtsdatum.strftime("%d.%m.%Y") }})</p>
         </section>
 
         <table>
