@@ -72,19 +72,20 @@ def index():
     )
 
     overdue_count = (
-        db.session.query(func.count(Auftrag.id))
-        .join(latest_rechnung, latest_rechnung.c.auftrag_id == Auftrag.id)
-        .join(
-            Rechnung,
-            and_(
-                Rechnung.auftrag_id == latest_rechnung.c.auftrag_id,
-                Rechnung.version == latest_rechnung.c.max_version,
-            ),
-        )
-        .filter(Rechnung.gesendet_datum.isnot(None))
-        .filter(Rechnung.gesendet_datum <= cutoff)
-        .scalar()
+    db.session.query(func.count(Auftrag.id))
+    .join(latest_rechnung, latest_rechnung.c.auftrag_id == Auftrag.id)
+    .join(
+        Rechnung,
+        and_(
+            Rechnung.auftrag_id == latest_rechnung.c.auftrag_id,
+            Rechnung.version == latest_rechnung.c.max_version,
+        ),
     )
+    .filter(Auftrag.status == AuftragsStatusEnum.SENT)
+    .filter(Rechnung.gesendet_datum.isnot(None))
+    .filter(Rechnung.gesendet_datum <= cutoff)
+    .scalar()
+)
 
     vm = HomeVM(
         recent_auftraege=recent_auftraege,

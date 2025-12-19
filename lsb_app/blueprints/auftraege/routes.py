@@ -285,6 +285,7 @@ def overdue_list():
             ),
         )
         .options(selectinload(Auftrag.patient))
+        .filter(Auftrag.status == AuftragsStatusEnum.SENT)
         .filter(Rechnung.gesendet_datum.isnot(None))
         .filter(Rechnung.gesendet_datum <= cutoff)
         .order_by(Rechnung.gesendet_datum.asc())
