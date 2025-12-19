@@ -245,10 +245,10 @@
                 {% for inv in patient.auftrag.rechnungen %}
                 <tr>
                   <td>{{ inv.version }}</td>
-                  <td>{{ inv.art }}</td>
+                  <td>{{ show(inv.art) }}</td>
                   <td>{{ inv.rechnungsdatum }}</td>
                   <td>{{ inv.betrag }}</td>
-                  <td>{{ inv.status }}</td>
+                  <td>{{ show(inv.status) }}</td>
                   <td>{{ inv.bemerkung }}</td>
                   <td>
                     <a href="{{ url_for('rechnungen.show_pdf', rid=inv.id) }}"
