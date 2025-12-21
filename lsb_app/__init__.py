@@ -53,6 +53,10 @@ def create_app():
     app.config["MAIL_IMAP_PORT"] = int(os.getenv("MAIL_IMAP_PORT", "993"))
     app.config["MAIL_IMAP_FOLDER"] = os.getenv("MAIL_IMAP_FOLDER", "Rechnungen")
 
+    # YNAB-Konfiguration
+    app.config["YNAB_ACCESS_TOKEN"] = os.getenv("YNAB_ACCESS_TOKEN", "")
+    app.config["YNAB_BUDGET_ID"] = os.getenv("YNAB_BUDGET_ID", "")
+
 
 
 
@@ -103,6 +107,9 @@ def create_app():
 
     from lsb_app.blueprints.zahlungen import bp as zahlungen_bp
     app.register_blueprint(zahlungen_bp, url_prefix="/zahlungen")
+
+    from lsb_app.blueprints.tests import bp as tests_bp
+    app.register_blueprint(tests_bp, url_prefix="/tests")
 
 
     # Logging konfigurieren
