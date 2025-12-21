@@ -1,0 +1,53 @@
+{# lsb_app/templates/auftraege/sent_list.html #}
+{% extends "base.html" %}
+{% block title %}SENT – versendete Aufträge{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="h4 mb-0">📤 SENT – versendete Aufträge</h1>
+  </div>
+
+  <table class="table table-sm align-middle">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Patient</th>
+        <th>Auftragsdatum</th>
+        <th>Status</th>
+        <th></th>
+        <th class="text-end"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in auftraege %}
+      <tr>
+        <td>{{ a.id }}</td>
+        <td>{{ a.patient.name }}, {{ a.patient.vorname }}</td>
+        <td>{{ a.auftragsdatum.strftime('%d.%m.%Y') if a.auftragsdatum else '—' }}</td>
+        <td>{{ a.status.value if a.status else '—' }}</td>
+        <td><a class="btn btn-sm btn-outline-success"
+            href="{{ url_for('zahlungen.new_with_aid', aid=a.id) }}">
+            Zahlung
+            </a>
+        </td>
+        <td class="text-end">
+          <a class="btn btn-sm btn-outline-secondary"
+             href="{{ url_for('patients.detail', pid=a.patient.id) }}">
+            Details
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+
+      {% if not auftraege %}
+      <tr>
+        <td colspan="5" class="text-center text-muted">Keine versendeten Aufträge gefunden</td>
+      </tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+</div>
+{% endblock %}

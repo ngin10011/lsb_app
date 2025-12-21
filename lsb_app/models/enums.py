@@ -36,3 +36,4 @@ class RechnungsStatusEnum(str, enum.Enum):
     CREATED = "CREATED"
     SENT = "SENT"
     CANCELED = "CANCELED"
+    PAID = "PAID"

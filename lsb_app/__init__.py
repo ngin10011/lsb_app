@@ -101,6 +101,10 @@ def create_app():
     from lsb_app.blueprints.verlauf import bp as verlauf_bp
     app.register_blueprint(verlauf_bp)
 
+    from lsb_app.blueprints.zahlungen import bp as zahlungen_bp
+    app.register_blueprint(zahlungen_bp, url_prefix="/zahlungen")
+
+
     # Logging konfigurieren
     _configure_logging(app)
 

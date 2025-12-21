@@ -3,7 +3,7 @@ from flask import render_template, request, redirect, url_for, flash, abort
 from lsb_app.blueprints.auftraege import bp
 from lsb_app.extensions import db
 from lsb_app.models import (Auftrag, AuftragsStatusEnum,
-        Bestattungsinstitut, Rechnung)
+        Bestattungsinstitut, Rechnung, RechnungsStatusEnum)
 from lsb_app.forms import (AuftragForm, DummyCSRFForm,
         InstitutForm, InstitutSelectForm)
 from lsb_app.models.adresse import Adresse
@@ -318,4 +318,40 @@ def todo_list():
         .all()
     )
     return render_template("auftraege/todo.html", auftraege=auftraege)
+
+@bp.route("/sent", endpoint="sent_list")
+def sent_list():
+    # latest Rechnung pro Auftrag (über version)
+    latest_rechnung = (
+        db.session.query(
+            Rechnung.auftrag_id.label("auftrag_id"),
+            func.max(Rechnung.version).label("max_version"),
+        )
+        .group_by(Rechnung.auftrag_id)
+        .subquery()
+    )
+
+    auftraege = (
+        db.session.query(Auftrag)
+        .join(latest_rechnung, latest_rechnung.c.auftrag_id == Auftrag.id)
+        .join(
+            Rechnung,
+            and_(
+                Rechnung.auftrag_id == latest_rechnung.c.auftrag_id,
+                Rechnung.version == latest_rechnung.c.max_version,
+            ),
+        )
+        .options(
+            selectinload(Auftrag.patient),
+            selectinload(Auftrag.rechnungen),  # optional, falls du im Template was brauchst
+        )
+        .filter(
+            Auftrag.status != AuftragsStatusEnum.DONE,
+            Rechnung.status == RechnungsStatusEnum.SENT,
+        )
+        .order_by(Auftrag.id.desc())
+        .all()
+    )
+
+    return render_template("auftraege/sent_list.html", auftraege=auftraege)
 

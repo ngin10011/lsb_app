@@ -1,0 +1,56 @@
+{# lsb_app/templates/zahlungen/new.html #}
+{% extends "base.html" %}
+{% block title %}Zahlungseingang erfassen{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h4 mb-0">💶 Zahlungseingang erfassen</h1>
+  </div>
+
+  {% if auftrag %}
+  <div class="alert alert-secondary">
+    <div><strong>Kontext</strong></div>
+    <div>Auftrag: #{{ auftrag.id }}</div>
+    <div>Patient: {{ auftrag.patient.name }}, {{ auftrag.patient.vorname }}</div>
+  </div>
+  {% endif %}
+
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+
+    <div class="row g-3">
+      <div class="col-12 col-lg-6">
+        {{ form.payee.label(class="form-label") }}
+        {{ form.payee(class="form-control") }}
+        {% for e in form.payee.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div class="col-12 col-lg-3">
+        {{ form.betrag.label(class="form-label") }}
+        {{ form.betrag(class="form-control") }}
+        {% for e in form.betrag.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div class="col-12 col-lg-3">
+        {{ form.eingangsdatum.label(class="form-label") }}
+        {{ form.eingangsdatum(class="form-control") }}
+        {% for e in form.eingangsdatum.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div class="col-12 col-lg-6">
+        {{ form.auftragsnummer.label(class="form-label") }}
+        {{ form.auftragsnummer(class="form-control") }}
+        {% for e in form.auftragsnummer.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+      </div>
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+      {{ form.submit(class="btn btn-primary") }}
+      <a href="{{ url_for('home.index') }}" class="btn btn-outline-secondary">Abbrechen</a>
+    </div>
+  </form>
+
+</div>
+{% endblock %}

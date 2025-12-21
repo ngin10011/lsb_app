@@ -8,7 +8,7 @@ from datetime import date
 from datetime import datetime, timedelta
 from lsb_app.viewmodels.home_vm import HomeVM
 from lsb_app.models import (AuftragsStatusEnum, Rechnung,
-        Bestattungsinstitut, Angehoeriger, Behoerde, Patient)
+        RechnungsStatusEnum, Angehoeriger, Behoerde, Patient)
 from lsb_app.services.auftrag_filters import ready_for_email_filter, ready_for_inquiry_filter
 
 bp = Blueprint("home", __name__)
@@ -85,7 +85,25 @@ def index():
     .filter(Rechnung.gesendet_datum.isnot(None))
     .filter(Rechnung.gesendet_datum <= cutoff)
     .scalar()
+    )
+
+    sent_count = (
+    db.session.query(func.count(Auftrag.id))
+    .join(latest_rechnung, latest_rechnung.c.auftrag_id == Auftrag.id)
+    .join(
+        Rechnung,
+        and_(
+            Rechnung.auftrag_id == latest_rechnung.c.auftrag_id,
+            Rechnung.version == latest_rechnung.c.max_version,
+        ),
+    )
+    .filter(
+        Auftrag.status != AuftragsStatusEnum.DONE,
+        Rechnung.status == RechnungsStatusEnum.SENT,
+    )
+    .scalar()
 )
+
 
     vm = HomeVM(
         recent_auftraege=recent_auftraege,
@@ -95,6 +113,7 @@ def index():
         inquiry_count=inquiry_count,
         wait_overdue_count=wait_overdue_count,
         overdue_count=overdue_count,
+        sent_count=sent_count,
         debug=current_app.debug,
     )
     return render_template("home.html", vm=vm)
