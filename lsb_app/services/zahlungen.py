@@ -70,7 +70,10 @@ def verbuche_zahlung(*, aid: int, betrag: Decimal, eingangsdatum: date, payee: s
 
     add_verlauf(
         auftrag=auftrag,
-        text=f"Zahlungseingang quittiert: {betrag} € am {eingangsdatum.strftime("%d.%m.%Y")} von {payee.strip()}.",
+        text = (
+            f"Zahlungseingang quittiert: {betrag} € am "
+            f"{eingangsdatum.strftime('%d.%m.%Y')} von {payee.strip()}."
+        ),
     )
 
     db.session.commit()
