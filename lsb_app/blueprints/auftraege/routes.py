@@ -349,7 +349,7 @@ def sent_list():
             Auftrag.status != AuftragsStatusEnum.DONE,
             Rechnung.status == RechnungsStatusEnum.SENT,
         )
-        .order_by(Auftrag.id.desc())
+        .order_by(Auftrag.auftragsnummer.asc())
         .all()
     )
 
