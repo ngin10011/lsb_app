@@ -246,7 +246,7 @@
                 <tr>
                   <td>{{ inv.version }}</td>
                   <td>{{ show(inv.art) }}</td>
-                  <td>{{ inv.rechnungsdatum }}</td>
+                  <td>{{ inv.rechnungsdatum.strftime("%d.%m.%Y") }}</td>
                   <td>{{ inv.betrag }}</td>
                   <td>{{ show(inv.status) }}</td>
                   <td>{{ inv.bemerkung }}</td>
