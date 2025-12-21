@@ -9,12 +9,15 @@ from sqlalchemy import func, and_
 from lsb_app.extensions import db
 from lsb_app.models import Auftrag, Rechnung, AuftragsStatusEnum, RechnungsStatusEnum
 from lsb_app.services.verlauf import add_verlauf
+from lsb_app.services.ynab import create_transaction_leichenschau
 
 
 @dataclass(frozen=True)
 class ZahlungResult:
     auftrag_id: int
     patient_id: int | None
+    ok_ynab: bool
+    message_ynab: str
 
 
 def _latest_rechnung_for_auftrag(aid: int) -> Rechnung | None:
@@ -72,4 +75,22 @@ def verbuche_zahlung(*, aid: int, betrag: Decimal, eingangsdatum: date, payee: s
 
     db.session.commit()
 
-    return ZahlungResult(auftrag_id=auftrag.id, patient_id=getattr(auftrag, "patient_id", None))
+    # payee = "Testbezahler"
+    # amount_total = 100.00
+    invoice = []
+    invoice.append(str(auftrag.auftragsnummer))
+    # date_transaction = "2025-12-21"
+
+    ok, msg = create_transaction_leichenschau(
+        payee=payee,
+        amount_total=betrag,
+        invoice=invoice,
+        date_transaction=eingangsdatum.isoformat(),
+    )
+
+    return ZahlungResult(
+        auftrag_id=auftrag.id, 
+        patient_id=getattr(auftrag, "patient_id", None),
+        ok_ynab=ok,
+        message_ynab=msg,
+        )

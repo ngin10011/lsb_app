@@ -73,6 +73,10 @@ def new(aid: int | None = None):
                 payee=form.payee.data,
             )
             flash(f"Zahlung verbucht: Auftrag #{result.auftrag_id} ist jetzt DONE.", "success")
+            flash(
+                result.message_ynab,
+                "success" if result.ok_ynab else "danger"
+            )
 
             # Redirect: zurück zum Patienten wenn möglich, sonst Home
             if result.patient_id:

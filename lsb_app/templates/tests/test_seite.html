@@ -9,4 +9,15 @@
         Dies ist eine Testseite
     </div>
 
+    <div>
+        <ul class="list-group">
+            {% for name, id in account_map.items() %}
+                <li class="list-group-item d-flex justify-content-between">
+                <span>{{ name }}</span>
+                <small class="text-muted">{{ id }}</small>
+                </li>
+            {% endfor %}
+            </ul>
+    </div>
+
 {% endblock %}
