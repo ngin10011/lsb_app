@@ -122,12 +122,6 @@ def create_app():
     return app
 
 def _configure_logging(app: Flask) -> None:
-    """Zentrales Logging-Setup.
-
-    - Root-Logger bekommt File-Handler (app.log, error.log)
-    - In Development zusätzlich Konsole mit DEBUG
-    - Module mit logging.getLogger(__name__) propagieren automatisch nach oben
-    """
     log_dir = os.path.join(app.instance_path, "logs")
     os.makedirs(log_dir, exist_ok=True)
 
@@ -135,50 +129,45 @@ def _configure_logging(app: Flask) -> None:
         "%(asctime)s [%(levelname)s] %(name)s:%(lineno)d %(message)s"
     )
 
-    # --- File-Handler: app.log (INFO+)
-    file_handler = RotatingFileHandler(
-        os.path.join(log_dir, "app.log"),
-        maxBytes=2 * 1024 * 1024,
-        backupCount=5,
-        encoding="utf-8",
-    )
-    file_handler.setLevel(logging.INFO)
-    file_handler.setFormatter(formatter)
+    def _rot(path: str, level: int) -> RotatingFileHandler:
+        h = RotatingFileHandler(
+            os.path.join(log_dir, path),
+            maxBytes=2 * 1024 * 1024,
+            backupCount=5,
+            encoding="utf-8",
+        )
+        h.setLevel(level)
+        h.setFormatter(formatter)
+        return h
 
-    # --- File-Handler: error.log (ERROR+)
-    error_handler = RotatingFileHandler(
-        os.path.join(log_dir, "error.log"),
-        maxBytes=2 * 1024 * 1024,
-        backupCount=5,
-        encoding="utf-8",
-    )
-    error_handler.setLevel(logging.ERROR)
-    error_handler.setFormatter(formatter)
+    debug_handler = _rot("debug.log", logging.DEBUG)   # DEBUG+
+    app_handler   = _rot("app.log", logging.INFO)      # INFO+
+    err_handler   = _rot("error.log", logging.ERROR)   # ERROR+
 
-    # --- Root-Logger konfigurieren ---
-    root = logging.getLogger()  # Root-Logger
-    # erst alle evtl. vorhandenen Handler entfernen (Flask/Werkzeug-Defaults, Reload etc.)
+    root = logging.getLogger()
     for h in root.handlers[:]:
         root.removeHandler(h)
 
-    root.addHandler(file_handler)
-    root.addHandler(error_handler)
+    # Root-Level: entscheidet, was überhaupt durchkommt
+    root.setLevel(logging.DEBUG if app.debug else logging.INFO)
 
+    # Handler immer
+    root.addHandler(app_handler)
+    root.addHandler(err_handler)
+
+    # Debug-Handler nur in Development
     if app.debug:
-        # In Development zusätzlich Konsole mit DEBUG
+        root.addHandler(debug_handler)
+
         console = logging.StreamHandler()
         console.setLevel(logging.DEBUG)
         console.setFormatter(formatter)
         root.addHandler(console)
-        root.setLevel(logging.DEBUG)
-    else:
-        root.setLevel(logging.INFO)
 
-    # Flask-App-Logger auf Root propagieren lassen
-    # (wir nutzen keine separaten Handler auf app.logger)
     app.logger.handlers = []
     app.logger.propagate = True
     app.logger.setLevel(root.level)
 
     app.logger.info("Logging initialisiert (debug=%s).", app.debug)
+
 
