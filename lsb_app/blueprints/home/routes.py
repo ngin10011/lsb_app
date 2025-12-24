@@ -9,7 +9,8 @@ from datetime import datetime, timedelta
 from lsb_app.viewmodels.home_vm import HomeVM
 from lsb_app.models import (AuftragsStatusEnum, Rechnung,
         RechnungsStatusEnum, Angehoeriger, Behoerde, Patient)
-from lsb_app.services.auftrag_filters import ready_for_email_filter, ready_for_inquiry_filter
+from lsb_app.services.auftrag_filters import (ready_for_email_filter, ready_for_inquiry_filter,
+            ready_for_post_filter)
 
 bp = Blueprint("home", __name__)
 
@@ -24,9 +25,15 @@ def index():
     )
 
     ready_email_count = (
-    db.session.query(func.count(Auftrag.id))
-    .filter(ready_for_email_filter())
-    .scalar()
+        db.session.query(func.count(Auftrag.id))
+        .filter(ready_for_email_filter())
+        .scalar()
+    )
+
+    ready_post_count = (
+        db.session.query(func.count(Auftrag.id))
+        .filter(ready_for_post_filter())
+        .scalar()
     )
 
     print_count = (
@@ -108,6 +115,7 @@ def index():
     vm = HomeVM(
         recent_auftraege=recent_auftraege,
         ready_email_count=ready_email_count,
+        ready_post_count=ready_post_count,
         print_count=print_count,
         todo_count=todo_count,
         inquiry_count=inquiry_count,

@@ -1,5 +1,5 @@
 # lsb_app/services/auftrag_filters.py
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, or_, not_
 from datetime import date, timedelta
 from lsb_app.extensions import db  # falls du es irgendwann brauchst
 from lsb_app.models.auftrag import Auftrag
@@ -8,7 +8,6 @@ from lsb_app.models.institut import Bestattungsinstitut
 from lsb_app.models.angehoeriger import Angehoeriger
 from lsb_app.models.behoerde import Behoerde
 from lsb_app.models.enums import KostenstelleEnum, AuftragsStatusEnum
-
 
 def ready_for_email_filter():
     """
@@ -105,4 +104,54 @@ def ready_for_inquiry_filter():
                 Bestattungsinstitut.email != "",
             )
         ),
+    )
+
+def ready_for_post_filter():
+    """
+    Aufträge, die:
+    - Status READY haben und
+    - (optional) älter als cutoff sind und
+    - NICHT per E-Mail zustellbar sind (je nach Kostenstelle).
+    """
+    # cutoff_date = date.today() - timedelta(days=3)
+
+    email_deliverable = or_(
+        # 1) Kostenstelle = Bestattungsinstitut + E-Mail im Institut
+        and_(
+            Auftrag.kostenstelle == KostenstelleEnum.BESTATTUNGSINSTITUT,
+            Auftrag.bestattungsinstitut.has(
+                and_(
+                    Bestattungsinstitut.email.isnot(None),
+                    Bestattungsinstitut.email != "",
+                )
+            ),
+        ),
+        # 2) Kostenstelle = Angehörige + mind. ein Angehöriger mit E-Mail
+        and_(
+            Auftrag.kostenstelle == KostenstelleEnum.ANGEHOERIGE,
+            Auftrag.patient.has(
+                Patient.angehoerige.any(
+                    and_(
+                        Angehoeriger.email.isnot(None),
+                        Angehoeriger.email != "",
+                    )
+                )
+            ),
+        ),
+        # 3) Kostenstelle = Behörde + mind. eine Behörde mit E-Mail
+        and_(
+            Auftrag.kostenstelle == KostenstelleEnum.BEHOERDE,
+            Auftrag.behoerden.any(
+                and_(
+                    Behoerde.email.isnot(None),
+                    Behoerde.email != "",
+                )
+            ),
+        ),
+    )
+
+    return and_(
+        Auftrag.status == AuftragsStatusEnum.READY,
+        # Auftrag.auftragsdatum <= cutoff_date,
+        not_(email_deliverable),
     )

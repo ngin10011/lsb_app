@@ -1,0 +1,130 @@
+<!-- lsb_app/templates/rechnungen/standard.html -->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Rechnung</title>
+    <style>
+        @page {
+            margin-top: 1.5cm;
+            margin-bottom: 3cm;
+            margin-left: 2.5cm;
+            margin-right: 2cm;
+
+            @bottom-center {
+                content: element(seitenfooter);
+            }
+        }
+        body {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-size: 11pt;
+            color: #000;
+            margin: 0;
+        }
+        header {
+            /* padding: 2cm 1.5cm 0 1.5cm; */
+            text-align: center;
+        }
+        .logo {
+            font-size: 16pt;
+            font-weight: bold;
+        }
+        .anschrift-kopfzeile {
+            font-size: 8pt;
+            text-decoration: underline;
+            margin-bottom: 0.3cm;
+        }
+        .anschrift-block {
+            position: absolute;
+            top: 3cm; /* inkl. 1.5cm margin-top somit 4.5cm */
+            left: 0cm; /* inkl. 2.5cm margin-left somit 2.5cm */
+            width: 9cm;
+            height: 4cm;
+            line-height: 1.3em;
+        }
+        .bankdaten-block {
+            position: absolute;
+            top: 3cm;
+            right: 0cm;
+            width: 8cm;
+            line-height: 1.3em;
+            font-size: 10pt;
+            text-align: left;
+        }
+        .content {
+            margin-top: 6cm;
+            padding-right: 0.5cm;
+            /* padding: 0 1.5cm 2cm 1.5cm; */
+        }
+        .title {
+            text-align: center;
+            font-size: 18pt;
+            font-weight: bold;
+            margin-bottom: 1cm;
+        }
+        .meta {
+            margin-top: 1cm;
+        }
+        .footer {
+            margin-bottom: 0cm;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1cm;
+            page-break-inside: avoid;
+        }
+        th, td {
+            border-bottom: 1px solid #ccc;
+            padding: 4px;
+        }
+        th {
+            background-color: #f0f0f0;
+            text-align: left;
+        }
+        .right {
+            text-align: right;
+        }
+        .total {
+            font-weight: bold;
+            border-top: 2px solid #000;
+        }
+        .seitenfooter {
+            position: running(seitenfooter);
+            font-size: 12pt;
+            text-align: center;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">{{ config.COMPANY_NAME }}</div>
+        <div>{{ config.COMPANY_ROLE }}<br>{{ config.COMPANY_ADDRESS }}<br>Tel: {{ config.COMPANY_PHONE }} - {{ config.COMPANY_EMAIL }}</div>
+    </header>
+
+    <div class="anschrift-block">
+        <div class="anschrift-kopfzeile">
+            {{ config.COMPANY_NAME }} - {{ config.COMPANY_ADDRESS }}
+        </div>
+        {{ anschrift_html|safe }}
+    </div>
+
+    <div class="content">
+        <p>Sehr geehrte{{ anrede }},</p>
+
+        <p>zunächst mein herzlichstes Beileid zu dem Todesfall in Ihrem Umfeld.</p>
+
+        <p>Es tut mir leid, Sie in dieser schweren Zeit mit der Bürokratie belästigen zu müssen.
+        Ich führte eine Leichenschau zur Ausstellung einer endgültigen Todesbescheinigung durch.
+        Da mit dem Eintritt des Todes die Leistungspflicht der Krankenkassen endet, sind die
+        Kosten der Leichenschau von den bestattungspflichtigen Angehörigen zu tragen.
+        Diese Information können Sie sich gerne von dem für Sie zuständigen Bestattungsunternehmen bestätigen lassen.</p>
+
+        <p>Im Anhang finden Sie eine Rechnung.</p>
+
+        <p>Mit einem stillen Gruß<br>{{ config.COMPANY_NAME }}</p>
+    </div>
+
+</body>
+</html>

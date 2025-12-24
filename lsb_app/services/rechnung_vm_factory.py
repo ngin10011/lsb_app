@@ -48,7 +48,14 @@ def erstelle_anschrift_html_bestattungsinstitut(auftrag) -> str:
 def erstelle_anschrift_html_angehoeriger(auftrag) -> str:
         angehoeriger = auftrag.patient.angehoerige[0]
         adr_ang = angehoeriger.adresse
-        anschrift_html = f"{angehoeriger.name}, {angehoeriger.vorname}<br>{adr_ang.strasse} {adr_ang.hausnummer}<br>{adr_ang.plz} {adr_ang.ort}"
+        if angehoeriger.name and angehoeriger.vorname:
+            name_complete = f"{angehoeriger.name}, {angehoeriger.vorname}"
+        elif angehoeriger.name and not angehoeriger.vorname:
+            name_complete = angehoeriger.name
+        else:
+            name_complete = auftrag.patient.name
+        
+        anschrift_html = f"{name_complete}<br>{adr_ang.strasse} {adr_ang.hausnummer}<br>{adr_ang.plz} {adr_ang.ort}"
         return anschrift_html
 
 def build_rechnung_vm(auftrag, cfg, rechnungsdatum: date, rechnungsart: str) -> RechnungVM:

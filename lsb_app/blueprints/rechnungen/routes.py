@@ -1,17 +1,20 @@
 # lsb_app/blueprints/rechnungen/routes.py
 from flask import (url_for, current_app, render_template, request, flash, send_file, 
                    redirect, abort)
+import zipfile
+from pypdf import PdfWriter, PdfReader
 from lsb_app.blueprints.rechnungen import bp
 from lsb_app.models import (Rechnung, Auftrag, AuftragsStatusEnum, RechnungsStatusEnum,
                             RechnungsArtEnum, KostenstelleEnum)
-from lsb_app.services.rechnung_vm_factory import build_rechnung_vm
+from lsb_app.services.rechnung_vm_factory import build_rechnung_vm, erstelle_anschrift_html_angehoeriger
 from datetime import date, datetime, timedelta
 from weasyprint import HTML
 from pathlib import Path
 from sqlalchemy import and_, desc, asc
+from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import SQLAlchemyError
 from lsb_app.services.auftrag_filters import (ready_for_email_filter, ready_for_inquiry_filter,
-            has_deliverable_email_filter)
+            has_deliverable_email_filter, ready_for_post_filter)
 from lsb_app.forms import RechnungForm, RechnungCreateForm, DummyCSRFForm
 from lsb_app.extensions import db
 from lsb_app.models import Angehoeriger, Bestattungsinstitut, Behoerde, GeschlechtEnum
@@ -28,6 +31,34 @@ import logging
 logger = logging.getLogger(__name__)
 
 RecipientModel = Union[Angehoeriger, Bestattungsinstitut, Behoerde]
+
+def _zip_pdfs(paths: list[Path], zip_path: Path) -> Path:
+    """Erstellt ein ZIP aus PDF-Dateien."""
+    zip_path.parent.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for p in paths:
+            if p.is_file():
+                zf.write(p, arcname=p.name)
+            else:
+                logger.warning("ZIP: PDF nicht gefunden: %s", p)
+    return zip_path
+
+def merge_pdfs(pdf_paths: list[Path], out_path: Path) -> Path:
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    writer = PdfWriter()
+
+    for p in pdf_paths:
+        if not p.is_file():
+            logger.warning("merge_pdfs: PDF fehlt: %s", p)
+            continue
+        reader = PdfReader(str(p))
+        for page in reader.pages:
+            writer.add_page(page)
+
+    with out_path.open("wb") as f:
+        writer.write(f)
+
+    return out_path
 
 def determine_recipient_for_auftrag(auftrag: Auftrag) -> tuple[Optional[str], Optional[RecipientModel]]:
     """
@@ -192,6 +223,41 @@ def create_rechnung_for_auftrag(
     )
 
     return rechnung
+
+def generate_anschreiben_pdf(rechnung: Rechnung) -> Path:
+    """
+    Erzeugt eine einfache Test-Anschreibenseite (1 Seite).
+    """
+    auftrag = rechnung.auftrag
+
+    anrede = build_anrede_for_angehoeriger(pick_angehoeriger_for_auftrag(auftrag=auftrag))
+    anschrift_html = erstelle_anschrift_html_angehoeriger(auftrag=auftrag)
+
+    html_str = render_template(
+        "rechnungen/anschreiben.html",
+        anrede=anrede,
+        anschrift_html=anschrift_html,
+        cfg=current_app.config,
+    )
+
+    pdf_bytes = HTML(
+        string=html_str,
+        base_url=request.host_url,
+    ).write_pdf()
+
+    out_dir = Path(current_app.instance_path) / "exports" / "anschreiben"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    out_path = out_dir / f"Anschreiben_{auftrag.auftragsnummer}_v{rechnung.version}.pdf"
+    out_path.write_bytes(pdf_bytes)
+
+    return out_path
+
+def pick_angehoeriger_for_auftrag(auftrag: Auftrag) -> Angehoeriger | None:
+    if not auftrag.patient or not auftrag.patient.angehoerige:
+        return None
+    # simple Heuristik: erster Eintrag
+    return auftrag.patient.angehoerige[0]
 
 def send_invoice_email(
     rechnung: Rechnung,
@@ -969,3 +1035,138 @@ def send_inquiry():
 
     return redirect(url_for("rechnungen.send_inquiry"))
 
+@bp.route("/send-batch-post", methods=["GET", "POST"])
+def send_batch_post():
+    """
+    Postversand-Workflow:
+    - GET: zeigt READY-Aufträge ohne zustellbare E-Mail (>= 3 Tage alt)
+    - POST: erzeugt pro Auftrag eine neue Rechnung+PDF, setzt Status PRINT,
+            packt PDFs als ZIP und liefert den Download zurück.
+    """
+    form = DummyCSRFForm()
+
+    if request.method == "GET":
+        sort = request.args.get("sort", "datum_asc")
+        today = date.today()
+
+        if sort == "datum_desc":
+            order_by_clause = [desc(Auftrag.auftragsdatum), asc(Auftrag.id)]
+        else:
+            order_by_clause = [asc(Auftrag.auftragsdatum), asc(Auftrag.id)]
+
+        auftraege_ready = (
+            db.session.query(Auftrag)
+            .options(selectinload(Auftrag.patient))
+            .filter(ready_for_post_filter())
+            .order_by(*order_by_clause)
+            .all()
+        )
+
+        return render_template(
+            "rechnungen/send_batch_post_select.html",
+            auftraege=auftraege_ready,
+            sort=sort,
+            today=today,
+            form=form,
+        )
+    
+    # === POST ===
+    if not form.validate_on_submit():
+        abort(400, description="Ungültiges CSRF-Token")
+
+    id_strings = request.form.getlist("auftrag_ids")
+    if not id_strings:
+        flash("Sie haben keinen Auftrag ausgewählt.", "warning")
+        return redirect(url_for("rechnungen.send_batch_post"))
+
+    try:
+        selected_ids = [int(x) for x in id_strings]
+    except ValueError:
+        flash("Ungültige Auswahl.", "danger")
+        return redirect(url_for("rechnungen.send_batch_post"))
+
+    # Nur ausgewählte + weiterhin print-ready
+    auftraege = (
+        db.session.query(Auftrag)
+        .options(selectinload(Auftrag.patient), selectinload(Auftrag.rechnungen))
+        .filter(
+            and_(
+                Auftrag.id.in_(selected_ids),
+                ready_for_post_filter(),
+            )
+        )
+        .order_by(asc(Auftrag.auftragsdatum), asc(Auftrag.id))
+        .all()
+    )
+
+    found_ids = {a.id for a in auftraege}
+    missing_ids = set(selected_ids) - found_ids
+    if missing_ids:
+        logger.warning(
+            "send_batch_post: Einige ausgewählte Aufträge sind nicht mehr READY/print-ready oder existieren nicht: %s",
+            missing_ids,
+        )
+
+    pdf_paths: list[Path] = []
+    successes: list[Auftrag] = []
+    failures: list[tuple[Auftrag, str]] = []
+    bundle_parts: list[Path] = []
+
+    try:
+        for a in auftraege:
+            try:
+                rechnung = create_rechnung_for_auftrag(a)
+
+                # Status & Verlauf
+                a.status = AuftragsStatusEnum.PRINT
+                rechnung.status = RechnungsStatusEnum.CREATED
+                add_verlauf(a, f"Rechnung v{rechnung.version} für Postversand erstellt")
+
+                if not rechnung.pdf_path:
+                    raise RuntimeError("pdf_path fehlt nach Rechnungserstellung")
+                invoice_path = Path(rechnung.pdf_path)
+
+                # >>> NEU: Anschreiben bei Angehörigen voranstellen
+                if a.kostenstelle == KostenstelleEnum.ANGEHOERIGE:
+                    empfaenger = pick_angehoeriger_for_auftrag(a)
+                    cover_path = generate_anschreiben_pdf(rechnung)
+                    bundle_parts.append(cover_path)
+
+                bundle_parts.append(invoice_path)
+
+                successes.append(a)
+
+            except Exception as exc:
+                logger.exception("send_batch_post: Fehler bei Auftrag %s", a.id)
+                failures.append((a, str(exc)))
+
+        db.session.commit()
+
+    except SQLAlchemyError as exc:
+        db.session.rollback()
+        logger.exception("send_batch_post: Fehler beim Commit")
+        flash(f"Fehler beim Speichern des Postversand-Status: {exc}", "danger")
+        return redirect(url_for("rechnungen.send_batch_post"))
+
+    if not bundle_parts and failures:
+        flash("Es konnten keine PDFs erzeugt werden.", "danger")
+        return render_template(
+            "rechnungen/send_batch_post_result.html",
+            successes=successes,
+            failures=failures,
+        )
+
+    bundle_dir = Path(current_app.instance_path) / "exports"
+    bundle_name = f"Postversand_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+    bundle_path = merge_pdfs(bundle_parts, bundle_dir / bundle_name)
+
+    if failures:
+        flash(f"{len(successes)} OK, {len(failures)} Fehler – Sammel-PDF enthält nur erfolgreiche.", "warning")
+
+    return send_file(
+        str(bundle_path),
+        mimetype="application/pdf",
+        download_name=bundle_name,
+        as_attachment=True,
+        max_age=0,
+    )

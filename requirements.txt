@@ -11,3 +11,4 @@ holidays
 geopy
 openrouteservice
 psycopg2-binary
+pypdf

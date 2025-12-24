@@ -18,6 +18,7 @@ class HomeVM:
     wait_overdue_count: int
     overdue_count: int
     sent_count: int
+    ready_post_count: int
 
     @property
     def ready_email_is_zero(self) -> bool:
@@ -46,3 +47,7 @@ class HomeVM:
     @property
     def sent_is_zero(self) -> bool:
         return not self.sent_count
+    
+    @property
+    def ready_post_is_zero(self) -> bool:
+        return not self.ready_post_count

@@ -1,0 +1,87 @@
+{# lsb_app/templates/rechnungen/send_batch_select.html #}
+{% extends "base.html" %}
+
+{% block title %}Batch-Versand vorbereiten{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+
+  <h1 class="h4 mb-3">Batch-Versand vorbereiten</h1>
+
+  {% if auftraege %}
+    <p class="mb-3">
+      Es wurden <strong>{{ auftraege|length }}</strong> Aufträge gefunden, die für den Post-Versand READY sind.
+      Alle sind vorausgewählt. Entfernen Sie die Häkchen bei Aufträgen, die Sie jetzt nicht versenden möchten.
+    </p>
+
+    <form method="post">
+      {{ form.csrf_token }}
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th style="width: 2.5rem;">
+              <input class="form-check-input" type="checkbox" id="check-all" checked>
+            </th>
+            <th>Auftrag</th>
+            <th>Patient</th>
+            <th>Auftragsdatum</th>
+            <th>Kostenstelle</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in auftraege %}
+          <tr>
+            <td>
+              <input
+                class="form-check-input auftrag-checkbox"
+                type="checkbox"
+                name="auftrag_ids"
+                value="{{ a.id }}"
+                checked
+              >
+            </td>
+            <td>{{ a.auftragsnummer or a.id }}</td>
+            <td>{{ a.patient.name }}, {{ a.patient.vorname }}</td>
+            <td>{{ a.auftragsdatum.strftime('%d.%m.%Y') if a.auftragsdatum else '-' }}</td>
+            <td>{{ a.kostenstelle.value if a.kostenstelle else '-' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <div class="d-flex justify-content-between mt-3">
+        <a href="{{ url_for('home.index') }}" class="btn btn-outline-secondary">
+          Abbrechen
+        </a>
+        <button type="submit" class="btn btn-primary">
+          Ausgewählte Rechnungen jetzt versenden
+        </button>
+      </div>
+    </form>
+
+  {% else %}
+    {% if not auftraege_pending %}
+      <div class="alert alert-info">
+        Es sind derzeit keine Aufträge im Status <strong>READY</strong> für den Post-Versand vorhanden.
+      </div>
+      <a href="{{ url_for('home.index') }}" class="btn btn-outline-secondary mt-3">
+        Zurück zur Startseite
+      </a>
+    {% endif %}
+  {% endif %}
+
+</div>
+
+{% if auftraege %}
+<script>
+  const checkAll = document.getElementById('check-all');
+  const checkboxes = document.querySelectorAll('.auftrag-checkbox');
+
+  if (checkAll) {
+    checkAll.addEventListener('change', function () {
+      checkboxes.forEach(cb => cb.checked = checkAll.checked);
+    });
+  }
+</script>
+{% endif %}
+{% endblock %}
