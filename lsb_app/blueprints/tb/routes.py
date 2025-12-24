@@ -73,7 +73,11 @@ def api_validate_address():
 
 @bp.route("/new", methods=["GET", "POST"])
 def new():
-    logger.debug("TB.new aufgerufen, Methode=%s", request.method)
+    logger.debug(
+        "TB.new aufgerufen, Methode=%s, POST keys=%s",
+        request.method,
+        list(request.form.keys())
+    )
     form = TBPatientForm()
 
     # Adress-Choices (bestehende)
@@ -82,8 +86,23 @@ def new():
         Adresse.hausnummer.asc(), 
         Adresse.ort.asc()
     ).all()
+
+    # logger.debug(
+    #     "Adressen geladen (%d): %s",
+    #     len(adressen),
+    #     [
+    #         f"{a.strasse} {a.hausnummer}, {a.plz} {a.ort}"
+    #         for a in adressen
+    #     ]
+    # )
+
     form.meldeadresse_id.choices = [(-1, "➕ Neue Adresse anlegen…")] + [(a.id, str(a)) for a in adressen]
+    
+    # logger.debug("Meldeadresse choices vollständig: %s", form.meldeadresse_id.choices)
+    
     form.auftragsadresse_id.choices = [(-2, "🟰 Wie Meldeadresse"), (-1, "➕ Neue Adresse anlegen…")] + [(a.id, str(a)) for a in adressen]
+
+    # logger.debug("Auftragsadresse choices vollständig: %s", form.auftragsadresse_id.choices)
 
     # ➕ Bestattungsinstitut-Choices
     institute = Bestattungsinstitut.query.order_by(Bestattungsinstitut.kurzbezeichnung).all()
@@ -105,6 +124,15 @@ def new():
         form.auftragsnummer.data = _next_auftragsnummer()
     
     if request.method == "POST" and "add_relative" in request.form:
+
+        logger.debug(
+            "TB.new: add_relative POST erkannt (value=%r) | has_relatives vorher=%r | angehoerige_count vorher=%s | keys=%s",
+            request.form.get("add_relative"),
+            form.has_relatives.data,
+            len(form.angehoerige.entries),
+            sorted(request.form.keys()),
+        )
+
         form.has_relatives.data = "some"
         logger.info("TB.new: weiterer Angehöriger angefordert")
         form.angehoerige.append_entry()
@@ -118,6 +146,7 @@ def new():
             (-1, "➕ Neue Adresse anlegen…"),
             (-3, "Unbekannt"),
         ]
+        logging.debug("TB.new: Render 1")
         return render_template("tb/new.html", form=form)
     
     if request.method == "POST" and ("add_relative" in request.form or "add_behoerde" in request.form):
@@ -132,6 +161,7 @@ def new():
         sub.sel_behoerde_id.choices = \
             [(0, "— keine Behörde —"), (-1, "➕ Neue Behörde anlegen…")] + [(b.id, b.name) for b in behoerden_all]
         sub.beh_adresse_id.choices = [(-1, "➕ Neue Adresse anlegen…")] + [(a.id, str(a)) for a in adressen]
+        logging.debug("TB.new: Render 2")
         return render_template("tb/new.html", form=form)
 
 
@@ -144,10 +174,12 @@ def new():
                     "TB.new: Meldeadresse mit ID %s nicht gefunden",
                     form.meldeadresse_id.data,
                 )
+                logging.debug("TB.new: Render 3")
                 return render_template("tb/new.html", form=form, error="Meldeadresse nicht gefunden.")
         else:
             required = ["new_strasse", "new_hausnummer", "new_plz", "new_ort"]
             if any(not getattr(form, f).data for f in required):
+                logging.debug("TB.new: Render 4")
                 return render_template("tb/new.html", form=form, error="Bitte alle Felder der Meldeadresse ausfüllen.")
             
             # 🔍 Adressvalidierung (Meldeadresse)
@@ -159,6 +191,8 @@ def new():
             )
             if ok is False:
                 form.new_strasse.errors.append(msg)
+                logging.debug("TB.new: Render 5")
+                flash(msg, "warning")
                 return render_template("tb/new.html", form=form)
             elif ok is None:
                 flash(msg or "Adressdienst aktuell nicht erreichbar, Meldeadresse wurde ohne Prüfung übernommen.", "warning")
@@ -184,6 +218,7 @@ def new():
         elif sel == -1:
             required2 = ["auftrag_strasse", "auftrag_hausnummer", "auftrag_plz", "auftrag_ort"]
             if any(not getattr(form, f).data for f in required2):
+                logging.debug("TB.new: Render 6")
                 return render_template("tb/new.html", form=form, error="Bitte alle Felder der Auftragsadresse ausfüllen.")
             
             # 🔍 Adressvalidierung (Auftragsadresse)
@@ -195,6 +230,7 @@ def new():
             )
             if ok is False:
                 form.auftrag_strasse.errors.append(msg)
+                logging.debug("TB.new: Render 7")
                 return render_template("tb/new.html", form=form)
             elif ok is None:
                 flash(msg or "Adressdienst aktuell nicht erreichbar, Auftragsadresse wurde ohne Prüfung übernommen.", "warning")
@@ -219,6 +255,7 @@ def new():
                     "TB.new: Auftragsadresse mit ID %s nicht gefunden",
                     sel,
                 )
+                logging.debug("TB.new: Render 8")
                 return render_template("tb/new.html", form=form, error="Auftragsadresse nicht gefunden.")
 
         # --- Patient anlegen ---
@@ -240,17 +277,20 @@ def new():
         elif bi_sel == -1:
             # Minimalpflichten prüfen: Kurzbezeichnung & Firmenname
             if not form.bi_kurz.data or not form.bi_firma.data:
+                logging.debug("TB.new: Render 9")
                 return render_template("tb/new.html", form=form, error="Bitte Kurzbezeichnung und Firmenname für das neue Bestattungsinstitut angeben.")
 
             # Adresse für das neue Institut bestimmen:
             if form.bi_adresse_id.data != -1:
                 bi_addr = Adresse.query.get(form.bi_adresse_id.data)
                 if not bi_addr:
+                    logging.debug("TB.new: Render 10")
                     return render_template("tb/new.html", form=form, error="Ausgewählte Institutsadresse nicht gefunden.")
             else:
                 # Neue Adresse anlegen → alle Felder nötig
                 req_bi_addr = [form.bi_strasse.data, form.bi_hausnummer.data, form.bi_plz.data, form.bi_ort.data]
                 if any(not v for v in req_bi_addr):
+                    logging.debug("TB.new: Render 11")
                     return render_template("tb/new.html", form=form, error="Bitte alle Felder der neuen Institutsadresse ausfüllen.")
                 
                 # 🔍 Adressvalidierung (Bestattungsinstitut)
@@ -262,6 +302,7 @@ def new():
                 )
                 if ok is False:
                     form.bi_strasse.errors.append(msg)
+                    logging.debug("TB.new: Render 12")
                     return render_template("tb/new.html", form=form)
                 elif ok is None:
                     flash(msg or "Adressdienst aktuell nicht erreichbar, Institutsadresse wurde ohne Prüfung übernommen.", "warning")
@@ -298,6 +339,7 @@ def new():
                     "TB.new: Bestattungsinstitut mit ID %s nicht gefunden",
                     bi_sel,
                 )
+                logging.debug("TB.new: Render 13")
                 return render_template("tb/new.html", form=form, error="Bestattungsinstitut nicht gefunden.")
 
         # --- Auftrag anlegen ---
@@ -344,6 +386,7 @@ def new():
 
                     req = [f.strasse.data, f.hausnummer.data, f.plz.data, f.ort.data]
                     if any(not v for v in req):
+                        logging.debug("TB.new: Render 14")
                         return render_template("tb/new.html", form=form, error="Bitte alle Felder der Angehörigenadresse ausfüllen.")
                     
                     # 🔍 Adressvalidierung (Angehörigenadresse)
@@ -355,6 +398,7 @@ def new():
                     )
                     if ok is False:
                         f.strasse.errors.append(msg)
+                        logging.debug("TB.new: Render 15")
                         return render_template("tb/new.html", form=form)
                     elif ok is None:
                         flash(msg or "Adressdienst aktuell nicht erreichbar, Angehörigenadresse wurde ohne Prüfung übernommen.", "warning")
@@ -402,16 +446,19 @@ def new():
 
             # Neuanlage:
             if not f.name.data:
+                logging.debug("TB.new: Render 16")
                 return render_template("tb/new.html", form=form, error="Bitte Namen der neuen Behörde angeben.")
 
             # Adresse bestimmen
             if f.beh_adresse_id.data != -1:
                 beh_addr = Adresse.query.get(f.beh_adresse_id.data)
                 if not beh_addr:
+                    logging.debug("TB.new: Render 17")
                     return render_template("tb/new.html", form=form, error="Ausgewählte Behördenadresse nicht gefunden.")
             else:
                 req = [f.beh_strasse.data, f.beh_hausnummer.data, f.beh_plz.data, f.beh_ort.data]
                 if any(not v for v in req):
+                    logging.debug("TB.new: Render 18")
                     return render_template("tb/new.html", form=form, error="Bitte alle Felder der neuen Behördenadresse ausfüllen.")
                 
                 # 🔍 Adressvalidierung (Behördenadresse)
@@ -423,6 +470,7 @@ def new():
                 )
                 if ok is False:
                     f.beh_strasse.errors.append(msg)
+                    logging.debug("TB.new: Render 19")
                     return render_template("tb/new.html", form=form)
                 elif ok is None:
                     flash(msg or "Adressdienst aktuell nicht erreichbar, Behördenadresse wurde ohne Prüfung übernommen.", "warning")
@@ -474,10 +522,12 @@ def new():
                 form.auftragsnummer.data,
             )
             form.auftragsnummer.errors.append("Auftragsnummer bereits vergeben.")
+            logging.debug("TB.new: Render 20")
             return render_template("tb/new.html", form=form)
 
         logger.info("TB.new: Datensatz erfolgreich angelegt, Redirect auf patients.overview")
         return redirect(url_for("patients.detail", pid=a.patient_id))
 
     # GET oder Validierungsfehler
+    logging.debug("TB.new: Render 21")
     return render_template("tb/new.html", form=form)
