@@ -1130,8 +1130,7 @@ def send_batch_post():
             "send_batch_post: Einige ausgewählte Aufträge sind nicht mehr READY/print-ready oder existieren nicht: %s",
             missing_ids,
         )
-
-    pdf_paths: list[Path] = []
+        
     successes: list[Auftrag] = []
     failures: list[tuple[Auftrag, str]] = []
     bundle_parts: list[Path] = []
