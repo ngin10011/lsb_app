@@ -38,16 +38,19 @@ def register_cli(app):
         # --- Dateien/Ordner in instance leeren ---
         instance = Path(app.instance_path)  # .../lsb_app/lsb_app/instance
         anschreiben_dir = instance / "exports" / "anschreiben"
+        postversand_dir = instance / "exports" / "postversand"
         invoices_dir = instance / "invoices"
         # logs_dir = instance / "logs"  # optional
 
         click.echo("🧹 Leere instance-Verzeichnisse ...")
         n1 = wipe_dir_contents(anschreiben_dir)
-        n2 = wipe_dir_contents(invoices_dir)
-        # n3 = wipe_dir_contents(logs_dir)
+        n2 = wipe_dir_contents(postversand_dir)
+        n3 = wipe_dir_contents(invoices_dir)
+        # n4 = wipe_dir_contents(logs_dir)
         click.echo(f"✅ exports/anschreiben geleert ({n1} Einträge).")
-        click.echo(f"✅ invoices geleert ({n2} Einträge).")
-        # click.echo(f"✅ logs geleert ({n3} Einträge).")
+        click.echo(f"✅ exports/psotversand geleert ({n2} Einträge)")
+        click.echo(f"✅ invoices geleert ({n3} Einträge).")
+        # click.echo(f"✅ logs geleert ({n4} Einträge).")
 
         click.echo("⚠️ Dropping schema 'public' (alle Tabellen, Daten, etc.) ...")
 
