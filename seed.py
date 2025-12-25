@@ -34,7 +34,7 @@ def create_address() -> Adresse:
         ort=fake.city(),
         # Distanz absichtlich direkt gesetzt (0–30 km),
         # damit später kein ORS/Nominatim-Call nötig ist.
-        distanz=random.randint(0, 30),
+        distanz=random.randint(1, 30),
     )
     db.session.add(addr)
     db.session.flush()  # addr.id verfügbar
@@ -329,6 +329,37 @@ def seed_data():
             kostenstelle=KostenstelleEnum.ANGEHOERIGE,
             patient_id=patient.id,
             auftragsadresse_id=patient.meldeadresse_id
+        )
+
+        create_verlauf(
+            auftrag_id=auftrag.id,
+            datum=auftrag.auftragsdatum,
+            ereignis="TB erstellt")
+        
+    # READY + Kostenstelle Angehörige + Angehörige selber Nachname, Geschlecht, Verwandtschaftsgrad, Tel-Nr, selbe Adresse (wie Meldeadresse) + Meldeadresse != Auftragsadresse
+    for _ in range(3):
+        patient = create_patient()
+
+        create_angehoeriger(
+            patient,
+            has=AngehoerigerHas(
+                name=True,
+                geschlecht=True,
+                verwandtschaftsgrad=True,
+                telefonnummer=True,
+                adresse=True,
+            ),
+            name=patient.name,
+            adresse=patient.meldeadresse,
+        )
+
+        auftragsadresse = create_address()
+
+        auftrag = create_auftrag(
+            status=AuftragsStatusEnum.READY,
+            kostenstelle=KostenstelleEnum.ANGEHOERIGE,
+            patient_id=patient.id,
+            auftragsadresse_id=auftragsadresse.id,
         )
 
         create_verlauf(
