@@ -253,6 +253,30 @@ def generate_anschreiben_pdf(rechnung: Rechnung) -> Path:
 
     return out_path
 
+@bp.get("/postversand/download/<path:bundle_name>")
+def download_postversand_bundle(bundle_name: str):
+    bundle_dir = Path(current_app.instance_path) / "exports" / "postversand"
+    file_path = bundle_dir / bundle_name
+
+    # Sicherheitscheck: nur Dateien aus diesem Ordner
+    try:
+        if not file_path.resolve().is_relative_to(bundle_dir.resolve()):
+            abort(403)
+    except AttributeError:
+        if not str(file_path.resolve()).startswith(str(bundle_dir.resolve())):
+            abort(403)
+
+    if not file_path.is_file():
+        abort(404)
+
+    return send_file(
+        str(file_path),
+        mimetype="application/pdf",
+        download_name=bundle_name,
+        as_attachment=True,
+        max_age=0,
+    )
+
 def pick_angehoeriger_for_auftrag(auftrag: Auftrag) -> Angehoeriger | None:
     if not auftrag.patient or not auftrag.patient.angehoerige:
         return None
@@ -1158,15 +1182,18 @@ def send_batch_post():
 
     bundle_dir = Path(current_app.instance_path) / "exports" / "postversand"
     bundle_name = f"Postversand_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-    bundle_path = merge_pdfs(bundle_parts, bundle_dir / bundle_name)
+    merge_pdfs(bundle_parts, bundle_dir / bundle_name)
 
     if failures:
         flash(f"{len(successes)} OK, {len(failures)} Fehler – Sammel-PDF enthält nur erfolgreiche.", "warning")
 
-    return send_file(
-        str(bundle_path),
-        mimetype="application/pdf",
-        download_name=bundle_name,
-        as_attachment=True,
-        max_age=0,
+    flash("Sammel-PDF erstellt.", "success")
+
+    # Statt direktem Download: Result-Page mit Download-Link
+    return render_template(
+        "rechnungen/send_batch_post_result.html",
+        successes=successes,
+        failures=failures,
+        bundle_name=bundle_name,   # <-- nur Name übergeben
     )
+

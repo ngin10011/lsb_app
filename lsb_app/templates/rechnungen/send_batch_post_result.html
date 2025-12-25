@@ -1,20 +1,20 @@
 <!-- lsb_app/templates/rechnungen/send_batch_result -->
 {% extends "base.html" %}
 
-{% block title %}Batch-Versand Ergebnis{% endblock %}
+{% block title %}Batch-Erstellung Ergebnis{% endblock %}
 
 {% block body %}
 <div class="container py-4">
 
-  <h1 class="h4 mb-3">Batch-Versand abgeschlossen</h1>
+  <h1 class="h4 mb-3">Batch-Erstellung abgeschlossen</h1>
 
   <p class="mb-3">
-    Erfolgreich gesendet: <strong>{{ successes|length }}</strong><br>
+    Erfolgreich erstellt: <strong>{{ successes|length }}</strong><br>
     Fehlgeschlagen: <strong>{{ failures|length }}</strong>
   </p>
 
   {% if successes %}
-  <h2 class="h6 mt-4">Erfolgreich gesendet</h2>
+  <h2 class="h6 mt-4">Erfolgreich erstellt</h2>
   <ul class="list-unstyled">
     {% for a in successes %}
     <li>
@@ -38,13 +38,18 @@
   </ul>
   {% endif %}
 
-  <div>
-    Path: {{ zip_name }}
-  </div>
+  {% if bundle_name %}
+    <div class="alert alert-info mt-3 d-flex justify-content-between align-items-center">
+      <span>Sammel-PDF bereit: <strong>{{ bundle_name }}</strong></span>
+      <a class="btn btn-primary"
+        href="{{ url_for('rechnungen.download_postversand_bundle', bundle_name=bundle_name) }}">
+        PDF herunterladen
+      </a>
+    </div>
+  {% endif %}
 
-  <a href="{{ url_for('rechnungen.send_batch_email') }}" class="btn btn-secondary mt-3">
-    Zurück zur READY-Liste
-  </a>
+
+
 
 </div>
 {% endblock %}
