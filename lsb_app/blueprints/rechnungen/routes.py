@@ -1156,7 +1156,7 @@ def send_batch_post():
             failures=failures,
         )
 
-    bundle_dir = Path(current_app.instance_path) / "exports"
+    bundle_dir = Path(current_app.instance_path) / "exports" / "postversand"
     bundle_name = f"Postversand_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
     bundle_path = merge_pdfs(bundle_parts, bundle_dir / bundle_name)
 
