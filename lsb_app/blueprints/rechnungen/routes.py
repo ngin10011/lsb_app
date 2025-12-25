@@ -15,7 +15,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import SQLAlchemyError
 from lsb_app.services.auftrag_filters import (ready_for_email_filter, ready_for_inquiry_filter,
             has_deliverable_email_filter, ready_for_post_filter)
-from lsb_app.forms import RechnungForm, RechnungCreateForm, DummyCSRFForm
+from lsb_app.forms import RechnungForm, RechnungCreateForm, DummyCSRFForm, PrintBatchToSentForm
 from lsb_app.extensions import db
 from lsb_app.models import Angehoeriger, Bestattungsinstitut, Behoerde, GeschlechtEnum
 from decimal import Decimal
@@ -1130,7 +1130,7 @@ def send_batch_post():
             "send_batch_post: Einige ausgewählte Aufträge sind nicht mehr READY/print-ready oder existieren nicht: %s",
             missing_ids,
         )
-        
+
     successes: list[Auftrag] = []
     failures: list[tuple[Auftrag, str]] = []
     bundle_parts: list[Path] = []
@@ -1196,3 +1196,84 @@ def send_batch_post():
         bundle_name=bundle_name,   # <-- nur Name übergeben
     )
 
+@bp.route("/print/batch", methods=["GET", "POST"], endpoint="print_batch")
+def print_batch():
+    # 1) Datensatzbasis: alle PRINT-Aufträge
+    auftraege = (
+        db.session.query(Auftrag)
+        .filter(Auftrag.status == AuftragsStatusEnum.PRINT)
+        .order_by(Auftrag.id.asc())
+        .all()
+    )
+
+    form = PrintBatchToSentForm()
+
+    if request.method == "GET":
+        # Default Versanddatum = heute
+        # form.versanddatum.data = date.today()
+
+        # Checkbox-Liste befüllen (alle vorausgewählt)
+        form.items.entries = []  # sicherheitshalber
+        for a in auftraege:
+            form.items.append_entry({
+                "auftrag_id": a.id,
+                "checked": True,
+            })
+
+        return render_template("rechnungen/print_batch.html", form=form, auftraege=auftraege)
+
+    # POST
+    if form.validate_on_submit():
+        versanddatum = form.versanddatum.data
+
+        # Map auftrag_id -> checked aus dem Form
+        selected_ids = [
+            item.auftrag_id.data
+            for item in form.items
+            if item.checked.data
+        ]
+
+        if not selected_ids:
+            flash("Keine Aufträge ausgewählt.", "warning")
+            return redirect(url_for("rechnungen.print_batch"))
+
+        # Aufträge laden (nur die ausgewählten + noch PRINT zur Sicherheit)
+        selected_auftraege = (
+            db.session.query(Auftrag)
+            .filter(Auftrag.id.in_(selected_ids))
+            .filter(Auftrag.status == AuftragsStatusEnum.PRINT)
+            .all()
+        )
+
+        updated = 0
+        for a in selected_auftraege:
+            # Auftrag -> SENT
+            a.status = AuftragsStatusEnum.SENT
+            updated += 1
+
+            # Zugehörige höchste Rechnung im Status CREATED -> SENT
+            # "höchste" = z.B. max(version) oder max(id) – nimm das, was bei dir stimmt.
+            inv = (
+                db.session.query(Rechnung)
+                .filter(Rechnung.auftrag_id == a.id)
+                .filter(Rechnung.status == RechnungsStatusEnum.CREATED)
+                .order_by(Rechnung.version.desc(), Rechnung.id.desc())  # falls version existiert
+                .first()
+            )
+            if inv:
+                inv.status = RechnungsStatusEnum.SENT
+
+            # Verlauf (empfohlen)
+            add_verlauf(
+                auftrag=a,
+                datum=versanddatum,
+                text="Postalischer Versand",
+            )
+
+        db.session.commit()
+        flash(f"{updated} Auftrag/Aufträge wurden auf SENT gesetzt.", "success")
+        return redirect(url_for("rechnungen.print_batch")) 
+
+    # Form invalid
+    flash("Bitte Eingaben prüfen.", "danger")
+    return render_template("rechnungen/print_batch.html", form=form, auftraege=auftraege)

@@ -9,8 +9,10 @@ from .behoerde import BehoerdeForm
 from .rechnung import RechnungForm, RechnungCreateForm
 from .dummy_csrf import DummyCSRFForm
 from .verlauf import VerlaufForm, DeleteForm
+from .print_batch import PrintBatchItemForm, PrintBatchToSentForm
 
 __all__ = ["PatientForm", "TBPatientForm", "AddressForm", "AuftragForm",
            "InstitutForm", "AngehoerigerForm", "BehoerdeForm",
            "RechnungForm", "RechnungCreateForm", "DummyCSRFForm",
-           "VerlaufForm", "DeleteForm", "InstitutSelectForm"]
+           "VerlaufForm", "DeleteForm", "InstitutSelectForm",
+           "PrintBatchItemForm", "PrintBatchToSentForm"]

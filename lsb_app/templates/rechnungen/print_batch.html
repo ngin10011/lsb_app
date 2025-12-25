@@ -1,0 +1,88 @@
+{# lsb_app/templates/rechnungen/print_batch.html #}
+{% extends "base.html" %}
+{% block title %}Postversand eintragen{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+  <h1 class="h4 mb-3">Postversand eintragen (PRINT → SENT)</h1>
+
+  <form method="post">
+    {{ form.csrf_token }}
+
+    <div class="row g-3 align-items-end mb-3">
+      <div class="col-sm-4">
+        {{ form.versanddatum.label(class="form-label") }}
+        {{ form.versanddatum(class="form-control") }}
+      </div>
+    </div>
+
+    {% if auftraege %}
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th style="width:2.5rem;">
+                <input
+                    type="checkbox"
+                    class="form-check-input"
+                    id="check-all"
+                    checked
+                >
+                </th>
+            <th>Auftrag</th>
+            <th>Patient</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for a in auftraege %}
+          {% set item = form.items[loop.index0] %}
+          <tr>
+            <td>
+            {{ item.auftrag_id(value=a.id) }}
+            {{ item.checked(class="form-check-input check-item") }}
+            </td>
+            <td>{{ a.auftragsnummer }}</td>
+            <td>{{ a.patient.name }}, {{ a.patient.vorname }}</td>
+            <td>{{ a.status.value if a.status else a.status }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+
+      <button type="submit" class="btn btn-primary">
+        {{ form.submit.label.text }}
+      </button>
+    {% else %}
+      <div class="alert alert-info">
+        Keine Aufträge im Status PRINT vorhanden.
+      </div>
+    {% endif %}
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const checkAll = document.getElementById("check-all");
+  const items = document.querySelectorAll(".check-item");
+
+  if (!checkAll) return;
+
+  // Klick auf "Alle auswählen"
+  checkAll.addEventListener("change", function () {
+    items.forEach(cb => {
+      cb.checked = checkAll.checked;
+    });
+  });
+
+  // Einzel-Checkbox verändert → Kopf ggf. anpassen
+  items.forEach(cb => {
+    cb.addEventListener("change", function () {
+      const allChecked = Array.from(items).every(i => i.checked);
+      checkAll.checked = allChecked;
+    });
+  });
+});
+</script>
+{% endblock %}
