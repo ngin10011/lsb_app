@@ -471,6 +471,7 @@ def seed_data():
                 gesendet_datum=True,
             ),
             gesendet_datum=date.today() - timedelta(days=31),
+            status=RechnungsStatusEnum.SENT,
             auftrag_id=auftrag.id,
         )
 

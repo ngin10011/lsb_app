@@ -10,7 +10,7 @@ from lsb_app.services.rechnung_vm_factory import build_rechnung_vm, erstelle_ans
 from datetime import date, datetime, timedelta
 from weasyprint import HTML
 from pathlib import Path
-from sqlalchemy import and_, desc, asc
+from sqlalchemy import and_, desc, asc, select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import SQLAlchemyError
 from lsb_app.services.auftrag_filters import (ready_for_email_filter, ready_for_inquiry_filter,
@@ -180,9 +180,36 @@ def create_rechnung_for_auftrag(
     if rechnungsdatum is None:
         rechnungsdatum = date.today()
 
-    # 1) Höchste Version ermitteln
-    max_version = max((r.version for r in auftrag.rechnungen), default=0)
+    # 0) letzte Rechnung (höchste version) holen
+    letzte = (
+        db.session.execute(
+            select(Rechnung)
+            .where(Rechnung.auftrag_id == auftrag.id)
+            .order_by(Rechnung.version.desc())
+            .limit(1)
+        )
+        .scalar_one_or_none()
+    )
+
+    # 1) Version bestimmen
+    max_version = letzte.version if letzte else 0
     neue_version = max_version + 1
+
+    # 1b) Vorgänger canceln (nur wenn vorhanden und "cancelbar")
+    if letzte and letzte.status not in {RechnungsStatusEnum.CANCELED}:
+        # optional: hier später harte Regeln rein (z.B. SENT/PAID nicht canceln)
+        if letzte.status in {RechnungsStatusEnum.CREATED}:  # ggf. erweitern
+            letzte.status = RechnungsStatusEnum.CANCELED
+            logger.info(
+                "create_rechnung_for_auftrag: Vorgänger-Rechnung cancelled – rechnung_id=%s (version=%s)",
+                letzte.id, letzte.version
+            )
+        else:
+            logger.info(
+                "create_rechnung_for_auftrag: Vorgänger-Rechnung NICHT cancelled (status=%s) – rechnung_id=%s",
+                letzte.status, letzte.id
+            )
+
     logger.info(
         "create_rechnung_for_auftrag: neue Version – auftrag_id=%s, version=%s",
         auftrag.id,
