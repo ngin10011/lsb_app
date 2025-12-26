@@ -3,6 +3,10 @@
 {% block title %}Overdue{% endblock %}
 
 {% block body %}
+{% macro show(v) -%}
+  {%- if v is none -%}—{%- elif v.value is defined and v.name is defined -%}{{ v.value }}{%- else -%}{{ v }}{%- endif -%}
+{%- endmacro %}
+
 <div class="container py-4">
 
   <div class="d-flex justify-content-between align-items-center mb-3">
@@ -18,6 +22,7 @@
         <th>Auftrag</th>
         <th>Patient</th>
         <th>Rechnung v</th>
+        <th>Kostenstelle</th>
         <th>Gesendet</th>
         <th class="text-end">Überfällig seit</th>
         <th class="text-end"></th>
@@ -29,6 +34,7 @@
         <td>{{ "%04d"|format(it.auftrag.auftragsnummer) }}</td>
         <td>{{ it.auftrag.patient.name }}, {{ it.auftrag.patient.vorname }}</td>
         <td>{{ it.rechnung.version }}</td>
+        <td>{{ show(it.auftrag.kostenstelle) }}</td>
         <td>{{ it.rechnung.gesendet_datum.strftime('%d.%m.%Y') }}</td>
         <td class="text-end">
           {{ it.overdue_days }} Tage
