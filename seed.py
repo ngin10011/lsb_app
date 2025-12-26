@@ -10,12 +10,15 @@ from sqlalchemy import func, cast, Integer
 
 from lsb_app.extensions import db
 from lsb_app.models import (Patient, Adresse, Auftrag, Verlauf,
-        Bestattungsinstitut, Behoerde, Angehoeriger)
+        Bestattungsinstitut, Behoerde, Angehoeriger, Rechnung)
 from lsb_app.models.enums import (
     GeschlechtEnum,
     KostenstelleEnum,
     AuftragsStatusEnum,
+    RechnungsArtEnum,
+    RechnungsStatusEnum,
 )
+from lsb_app.blueprints.rechnungen.routes import create_rechnung_for_auftrag
 
 # Deutscher Faker (für Namen / Adressen)
 fake = Faker("de_DE")
@@ -124,6 +127,60 @@ def create_behoerde() -> Behoerde:
     return behoerde
 
 @dataclass(frozen=True)
+class RechnungHas:
+    version: bool = True
+    art: bool = True
+    rechnungsdatum: bool = True
+    betrag: bool = True
+    status: bool = True
+    auftrag_id: bool = True
+
+    bemerkung: bool = False
+    pdf_path: bool = False
+    gesendet_datum: bool = False
+
+def create_rechnung(
+        auftrag_id: int,
+        *,
+        has: RechnungHas = RechnungHas(),
+        **overrides
+    ) -> Rechnung:
+
+    data = {}
+
+    if has.version:
+        data["version"] = overrides.get("version", 1) # TODO falls bereits vorhanden
+
+    if has.art:
+        data["art"] = overrides.get("art", RechnungsArtEnum.ERSTRECHNUNG)
+
+    if has.rechnungsdatum:
+        data["rechnungsdatum"] = overrides.get("rechnungsdatum", date.today())
+
+    if has.betrag:
+        data["betrag"] = overrides.get("betrag", 100.00)
+
+    if has.status:
+        data["status"] = overrides.get("status", RechnungsStatusEnum.CREATED)
+
+    if has.bemerkung:
+        data["bemerkung"] = overrides.get("bemerkung", None)
+
+    if has.pdf_path:
+        data["pdf_path"] = overrides.get("pdf_path", None)
+
+    if has.gesendet_datum:
+        data["gesendet_datum"] = overrides.get("gesendet_datum", None)
+
+    rechnung = Rechnung(
+        auftrag_id=auftrag_id,
+        **data
+    )
+    db.session.add(rechnung)
+    db.session.flush()
+    return rechnung
+
+@dataclass(frozen=True)
 class VerlaufHas:
     datum: bool = True
     ereignis: bool = True
@@ -199,7 +256,11 @@ def create_auftrag(*, has: AuftragHas = AuftragHas(), **overrides) -> Auftrag:
         # Sekunden ok, Mikrosekunden weg
         data["auftragsuhrzeit"] = overrides.get(
             "auftragsuhrzeit",
-            fake.time(),
+            time(
+                hour=random.randint(0, 23),
+                minute=random.randint(0, 59),
+                second=0,
+            ),
         )
 
     if has.kostenstelle:
@@ -383,6 +444,35 @@ def seed_data():
 
         
         auftrag.behoerden.append(behoerde)
+
+        create_verlauf(
+            auftrag_id=auftrag.id,
+            # datum=auftrag.auftragsdatum + timedelta(days=2),
+            datum=auftrag.auftragsdatum,
+            ereignis="TB erstellt")
+
+    # OVERDUE + Kostenstelle Bestattungsinstitut - Angehörige - Behörde
+    for _ in range(3):
+        patient = create_patient()
+        adresse = create_address()
+        bestattungsinstitut = create_bestattungsinstitut()
+
+        auftrag = create_auftrag(
+            has=AuftragHas(bestattungsinstitut_id=True),
+            status=AuftragsStatusEnum.SENT,
+            kostenstelle=KostenstelleEnum.BESTATTUNGSINSTITUT,
+            bestattungsinstitut_id=bestattungsinstitut.id,
+            patient_id=patient.id,
+            auftragsadresse_id=adresse.id
+        )
+
+        create_rechnung(
+            has=RechnungHas(
+                gesendet_datum=True,
+            ),
+            gesendet_datum=date.today() - timedelta(days=31),
+            auftrag_id=auftrag.id,
+        )
 
         create_verlauf(
             auftrag_id=auftrag.id,
