@@ -10,12 +10,12 @@ from geopy.distance import geodesic
 import time
 # from PyQt6.QtWidgets import QMessageBox
 # from config.settings import STARTADRESSE
-# import logging
+import logging
 
-# logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 def berechne_entfernung(strasse, plz, ort):
-    # logger.info(f"Starte Entfernungsermittlung für: {strasse}, {plz} {ort}")
+    logger.info(f"Starte Entfernungsermittlung für: {strasse}, {plz} {ort}")
 
     # ➤ Konstanten
     # STARTADRESSE = "Steinsdorfstraße 15, 80538 München"
@@ -34,22 +34,22 @@ def berechne_entfernung(strasse, plz, ort):
     # ➤ Startadresse einmalig geokodieren
     start_loc = geolocator.geocode(STARTADRESSE)
     if not start_loc:
-        # logger.error("Startadresse konnte nicht geokodiert werden.")
+        logger.error("Startadresse konnte nicht geokodiert werden.")
         raise Exception("Startadresse konnte nicht geokodiert werden")
     coords_start = (start_loc.longitude, start_loc.latitude)
 
-    # logger.debug(f"Startadresse: {STARTADRESSE} → Koordinaten: {coords_start}")
+    logger.debug(f"Startadresse: {STARTADRESSE} → Koordinaten: {coords_start}")
 
     zieladresse = f"{strasse}, {plz} {ort}"
     try:
         ziel_loc = geolocator.geocode(zieladresse)
         if not ziel_loc:
-            # logger.warning(f"Zieladresse nicht gefunden: {zieladresse}")
+            logger.error(f"Zieladresse nicht gefunden: {zieladresse}")
             # QMessageBox.information(parent, "Fehler", f"⚠️ Zieladresse nicht gefunden ({zieladresse})")
             print(f"⚠️ Fehler: Zieladresse nicht gefunden ({zieladresse})")
         else:
             coords_ziel = (ziel_loc.longitude, ziel_loc.latitude)
-            # logger.debug(f"Zieladresse: {zieladresse} → Koordinaten: {coords_ziel}")
+            logger.debug(f"Zieladresse: {zieladresse} → Koordinaten: {coords_ziel}")
 
             # ➤ Fahrstrecke mit ORS berechnen
             route = client.directions(
@@ -59,10 +59,10 @@ def berechne_entfernung(strasse, plz, ort):
                 preference='shortest'
             )
             fahrstrecke_km = round(route['features'][0]['properties']['segments'][0]['distance'] / 1000)
-            # logger.info(f"Fahrstrecke berechnet: {fahrstrecke_km} km von Start zu {zieladresse}")
+            logger.info(f"Fahrstrecke berechnet: {fahrstrecke_km} km von Start zu {zieladresse}")
 
     except Exception as e:
-        # logger.error(f"Fehler bei der Entfernungsermittlung für {zieladresse}: {e}")
+        logger.error(f"Fehler bei der Entfernungsermittlung für {zieladresse}: {e}")
         # QMessageBox.warning(parent, "Fehler", f"❌ Fehler: {e}")
         print(f"❌ Fehler: {e}")
     
