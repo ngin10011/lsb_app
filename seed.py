@@ -480,5 +480,50 @@ def seed_data():
             # datum=auftrag.auftragsdatum + timedelta(days=2),
             datum=auftrag.auftragsdatum,
             ereignis="TB erstellt")
+        
+    # SENT + Kostenstelle Bestattungsinstitut + Angehöriger - Behörde
+    for _ in range(3):
+        patient = create_patient()
+
+        angehoeriger = create_angehoeriger(
+            patient=patient,
+            has=AngehoerigerHas(
+                name=True,
+                vorname=True,
+                geschlecht=True,
+                verwandtschaftsgrad=True,
+                telefonnummer=True,
+                adresse=True,
+                ),
+                name=patient.name,
+        )
+
+        adresse = create_address()
+
+        bestattungsinstitut = create_bestattungsinstitut()
+
+        auftrag = create_auftrag(
+            has=AuftragHas(bestattungsinstitut_id=True),
+            status=AuftragsStatusEnum.SENT,
+            kostenstelle=KostenstelleEnum.BESTATTUNGSINSTITUT,
+            bestattungsinstitut_id=bestattungsinstitut.id,
+            patient_id=patient.id,
+            auftragsadresse_id=adresse.id
+        )
+
+        create_rechnung(
+            has=RechnungHas(
+                gesendet_datum=True,
+            ),
+            gesendet_datum=date.today() - timedelta(days=3),
+            status=RechnungsStatusEnum.SENT,
+            auftrag_id=auftrag.id,
+        )
+
+        create_verlauf(
+            auftrag_id=auftrag.id,
+            # datum=auftrag.auftragsdatum + timedelta(days=2),
+            datum=auftrag.auftragsdatum,
+            ereignis="TB erstellt")
 
     db.session.commit()
