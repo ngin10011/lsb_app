@@ -81,10 +81,14 @@ def create_transaction_leichenschau(
 
     # TODO: schöner: per config oder Mapping statt hardcodiert
     account_id = "7be5fc7c-6bc0-4e1e-9584-fb2f3c93493c"
-    category_id_steuer = "a8eaf507-3ea8-4ced-bebe-c52cd9d90447"
-    category_id_aerzteversorgung = "bbec5758-1de3-44ff-b9c7-13220b8a964e"
-    category_id_aerztekammer = "8227ac8f-9634-4a29-8989-c57584f2060b"
     category_id_ready = "ee5de694-16d6-4648-8231-9b60e8bb0e3e"
+    category_id_steuer = "443506bf-b0b1-4f62-8e9a-b7a921f581c6" # 2026
+    category_id_aerzteversorgung = "43c90e0a-885f-4bcf-9583-3ded8429c564" # 2026
+    category_id_aerztekammer = "71939d2c-8d40-4ada-9340-d465993701b5" # 2026
+    # category_id_steuer = "a8eaf507-3ea8-4ced-bebe-c52cd9d90447" # 2025
+    # category_id_aerzteversorgung = "bbec5758-1de3-44ff-b9c7-13220b8a964e" # 2025
+    # category_id_aerztekammer = "8227ac8f-9634-4a29-8989-c57584f2060b" # 2025
+    
 
     inv_clean = [i for i in invoice if i]  # leere Strings raus
     memo = "Leichenschau" if not inv_clean else "Leichenschau " + " + ".join(inv_clean)
